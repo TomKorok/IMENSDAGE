@@ -7,7 +7,8 @@ import pandas as pd
 from scipy.io import arff
 
 import GAN
-import AE
+from AEs import AE_CONTAINER
+
 
 #IMage ENcoding for Synthetic DAta GEnaration
 
@@ -95,6 +96,7 @@ class IMENSDAGE:
         plt.savefig(f"results/generated_images/{title}.png")
         plt.show()
 
+    #TODO
     def read_data(self, location, conditional):
         # reading the data
         try:
@@ -153,28 +155,28 @@ class IMENSDAGE:
         return fake_samples
 
     def generate_models(self, conditional):
-        autoencoder = AE.Autoencoder(conditional, self.n_features, self.n_classes).to(self.device)
-        gan = GAN.GAN(self.batch_size, 28, 7, 7, 2, conditional=conditional).to(self.device)
+        ae = AE_CONTAINER.AE_CONTAINER(conditional, self.n_features, self.n_classes).to(self.device)
+        gan = GAN.GAN(self.batch_size, 28, 7, 7, 2).to(self.device)
 
         # print the summary of the AE and G
-        autoencoder.get_summary()
+        ae.get_summary()
         gan.get_summary()
-        return gan, autoencoder
+        return gan, ae
 
     def train_models(self, location, title, conditional):
         self.read_data(location, conditional)
-        gan, autoencoder = self.generate_models(conditional)
+        gan, ae = self.generate_models(conditional)
         # pre-train the encoder
-        total_ae_loss = autoencoder.train_model(self.dataloader, epochs=500)
+        total_ae_loss = ae.train_model(self.dataloader, epochs=500)
         plot_curve(f"Pre-trained AE Loss {title} C={conditional}", total_ae_loss)
 
         # gan training -- this also plots the training curves
-        total_d_loss, total_g_loss = gan.train_model(autoencoder, self.dataloader, epochs=5000)
+        total_d_loss, total_g_loss = gan.train_model(ae, self.dataloader, epochs=5000)
         plot_curve(f"Discriminator Loss {title} C={conditional}", total_d_loss)
         plot_curve(f"Generator Loss {title} C={conditional}", total_g_loss)
 
-        return gan, autoencoder
+        return gan, ae
 
-    def fit(self, location, round_exceptions=None, title=None, conditional=True):
-        gan, autoencoder = self.train_models(location, title, conditional)
-        return self.generate_result(gan, autoencoder, round_exceptions, title, conditional)
+    def fit(self, location, round_exceptions=None, title=None, conditional='c'):
+        gan, ae = self.train_models(location, title, conditional)
+        return self.generate_result(gan, ae, round_exceptions, title, conditional)
