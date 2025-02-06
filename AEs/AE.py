@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm.auto import tqdm
@@ -43,25 +44,32 @@ class AE(nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=0.00001)
 
     def encode(self, x, labels=None):
-        x = self.lin_encoder(x).view(-1, 1, self.start_img_s, self.start_img_s)
+        if x.size(1) != self.n_features:
+            labels = labels.unsqueeze(1)
+            x = torch.cat((x, labels), dim=1)
+        x = self.lin_encoder(x)
+        x = x.view(-1, 1, self.start_img_s, self.start_img_s)
         return self.conv_encoder(x)
 
     def decode(self, x, labels=None):
         return self.conv_decoder(x)
 
-    def forward(self, x, labels=None):
+    def forward(self, x, labels):
         return self.decode(self.encode(x, labels), labels)
 
     def train_model(self, dataloader, epochs):
         self.train()
         total_loss = []
         for _ in tqdm(range(epochs), colour="yellow"):
-            for inputs, _ in dataloader:
-                output = self.forward(inputs)
+            for features, labels in dataloader:
+                output = self.forward(features, labels)
                 self.optimizer.zero_grad()
-                loss = self.criterion(output, inputs)
+                loss = self.criterion(output, features)
                 loss.backward(retain_graph=True)
                 self.optimizer.step()
                 total_loss.append(loss.item())
 
         return total_loss
+
+    def get_n_features(self):
+        return self.n_features

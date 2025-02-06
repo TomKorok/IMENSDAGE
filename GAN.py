@@ -56,34 +56,11 @@ class GAN(nn.Module):
     def get_discriminator(self):
         return self.discriminator
 
-    # sample 'amount' amount of data from each class, reverse the standard scaling and rounds up
-    def sample(self, amount, original_data, autoencoder, scaler, round_exceptions):
+    def sample(self, amount):
         self.set_mode("eval")
         class_labels = torch.arange(self.n_classes, device=self.device).repeat_interleave(amount)
         self.set_batch_size(class_labels.size(0))
-        generated_fake_images = self.generate(class_labels)
-        fake_samples = np.array(autoencoder.decode(generated_fake_images, class_labels).squeeze(dim=0).detach().cpu())
-
-        # convert the samples to dataframe and redo the normalizing
-        fake_samples = pd.DataFrame(fake_samples)
-        fake_samples = scaler.inverse_transform(fake_samples)
-
-        # concat the fake samples with its labels and convert to dataframe
-        class_labels = np.expand_dims(class_labels.detach().cpu().numpy(), axis=1)
-        if self.conditional:
-            fake_samples = np.concatenate((fake_samples, class_labels), axis=1)
-        fake_samples = pd.DataFrame(fake_samples, columns=original_data.columns)
-
-        # round the necessary columns -- everything except for the exceptions
-        fake_samples.loc[:, ~fake_samples.columns.isin(round_exceptions)] = fake_samples.loc[:, ~fake_samples.columns.isin(round_exceptions)].round(0)
-
-        # set the column types equal to the ones in the original
-        for column in fake_samples.columns:
-            if column in original_data:
-                fake_samples[column] = fake_samples[column].astype(original_data[column].dtype)
-
-        # return both the converted synth data and the generated images
-        return fake_samples, generated_fake_images
+        return {"gen_images": self.generate(class_labels), "labels": class_labels}
 
     def generate(self, labels):
         noise = torch.randn(self.batch_size, self.noise_size, device=self.device)

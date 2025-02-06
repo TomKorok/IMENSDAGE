@@ -77,12 +77,15 @@ class CAE(nn.Module):
         self.train()
         total_loss = []
         for _ in tqdm(range(epochs), colour="yellow"):
-            for inputs, labels in dataloader:
-                output = self.forward(inputs, labels)
+            for features, labels in dataloader:
+                output = self.forward(features, labels)
                 self.optimizer.zero_grad()
-                loss = self.criterion(output, inputs)
+                loss = self.criterion(output, features)
                 loss.backward(retain_graph=True)
                 self.optimizer.step()
                 total_loss.append(loss.item())
 
         return total_loss
+
+    def get_n_features(self):
+        return self.n_features

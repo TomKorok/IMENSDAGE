@@ -3,9 +3,9 @@ from unittest import case
 import torch.nn as nn
 from torchinfo import summary
 
-import CAE
-import AE
-import IGTD_AE
+from AEs import CAE
+from AEs import AE
+from AEs import IGTD_AE
 
 
 def create_ae_model(n_features, n_classes, conditional):
@@ -13,19 +13,20 @@ def create_ae_model(n_features, n_classes, conditional):
         case 'c':
             return CAE.CAE(n_features, n_classes)
         case 'n':
-            return AE.AE(n_features, n_classes)
+            return AE.AE(n_features + 1, n_classes)
         case 'igtd':
             return IGTD_AE.IGTD_AE(n_features, n_classes)
         case _:
             return CAE.CAE(n_features, n_classes)
 
-class AE_CONTAINER(nn.Module):
+class AEHandler(nn.Module):
     def __init__(self, conditional, n_features, n_classes):
-        super(AE_CONTAINER, self).__init__()
+        super(AEHandler, self).__init__()
         self.conditional = conditional
-        self.n_features = n_features
-        self.n_classes = n_classes
         self.autoencoder = create_ae_model(n_features, n_classes, conditional)
+        self.n_features = self.autoencoder.get_n_features()
+        self.n_classes = n_classes
+
 
     def encode(self, x, labels):
         return self.autoencoder.encode(x, labels)
