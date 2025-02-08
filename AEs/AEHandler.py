@@ -1,5 +1,3 @@
-from unittest import case
-
 import torch.nn as nn
 from torchinfo import summary
 
@@ -13,7 +11,7 @@ def create_ae_model(n_features, n_classes, conditional):
         case 'c':
             return CAE.CAE(n_features, n_classes)
         case 'n':
-            return AE.AE(n_features + 1, n_classes)
+            return AE.AE(n_features, n_classes)
         case 'igtd':
             return IGTD_AE.IGTD_AE(n_features, n_classes)
         case _:

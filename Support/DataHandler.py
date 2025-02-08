@@ -7,36 +7,41 @@ from scipy.io import arff
 
 
 class DataHandler:
-    def __init__(self, batch_size, device, location, dataset_title, target=None):
+    def __init__(self, batch_size, device, location, dataset_title, target=None, classification=True):
         self.scaler = StandardScaler()
         self.batch_size = batch_size
         self.device = device
         self.dataset_title = dataset_title
         self.target = target
+        self.n_classes = None
+        self.classification = classification
         self.n_features, self.dataframe, self.dataset, self.dataloader = self.read_data(location)
         # pandas dataset # Tensor dataset # tensor
 
     def read_data(self, location):
         # reading the data
-        try:
-            dataframe = read_file(location, self.target)  # returning dataframe
-            if self.target is not None:
-                n_features = dataframe.shape[1] - 1
-            else:
-                n_features = dataframe.shape[1]
-
+        dataframe = read_file(location, self.target, self.classification)  # returning dataframe
+        if self.classification:
+            n_features = dataframe.shape[1] - 1
             # Normalize the features
             normalized_features = self.scaler.fit_transform(dataframe.iloc[:, :-1].values)
             # Convert to tensors, concat and then convert to dataloader
             features_tensor = torch.tensor(normalized_features, dtype=torch.float32, device=self.device)
 
             labels_tensor = torch.tensor(dataframe.iloc[:, -1].values, dtype=torch.float32, device=self.device)
+            self.n_classes = torch.unique(labels_tensor).size()[0]
             dataset = TensorDataset(features_tensor, labels_tensor)
             dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+        else:
+            n_features = dataframe.shape[1]
+            # Normalize the features
+            normalized_features = self.scaler.fit_transform(dataframe.values)
+            # Convert to tensors, concat and then convert to dataloader
+            features_tensor = torch.tensor(normalized_features, dtype=torch.float32, device=self.device)
+            dataset = TensorDataset(features_tensor)
+            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
-            return n_features, dataframe, dataset, dataloader
-        except ValueError as e:
-            raise e
+        return n_features, dataframe, dataset, dataloader
 
     def get_n_features(self):
         return self.n_features
@@ -86,33 +91,30 @@ class DataHandler:
 
         return fake_samples
 
+    def get_n_classes(self):
+        return self.n_classes
 
-#TODO diff between classification and non-c
-def read_file(location, target):
+
+def read_file(location, target, classification):
     if 'arff' in location:
         # Read the ARFF file
-        try:
-            data, meta = arff.loadarff(location)
-            print("ARFF file loaded successfully!")
-            # Convert the ARFF data to a pandas DataFrame
-            df = pd.DataFrame(data)
-            df = df.dropna()  # dropping uncompleted lines
-            type_column = df.pop('TYPE')
-            df['Outcome'] = type_column
-            df = df.astype(np.float32)
-            return df
-        except FileNotFoundError:
-            print(f"Error: File '{location}' not found.")
-        except Exception as e:
-            print(f"An error occurred while loading the ARFF file: {e}")
+        data, meta = arff.loadarff(location)
+        print("ARFF file loaded successfully!")
+        # Convert the ARFF data to a pandas DataFrame
+        df = pd.DataFrame(data)
     elif 'csv' in location:
-        try:
-            df = pd.read_csv(location)
-            print("CSV file loaded successfully!")
-            return df
-        except FileNotFoundError:
-            print(f"Error: File '{location}' not found.")
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+        df = pd.read_csv(location)
+        print("CSV file loaded successfully!")
     else:
         raise ValueError("Invalid input name provided")
+
+    df = df.dropna()  # dropping uncompleted lines
+    if classification:
+        return handle_class(df, target)
+    else:
+        return df
+
+def handle_class(df, target):
+    type_column = df.pop(target)  # pop the target column
+    df['Target'] = type_column  # move it to the end and rename it to target
+    return df.astype(np.float32)

@@ -44,9 +44,6 @@ class AE(nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=0.00001)
 
     def encode(self, x, labels=None):
-        if x.size(1) != self.n_features:
-            labels = labels.unsqueeze(1)
-            x = torch.cat((x, labels), dim=1)
         x = self.lin_encoder(x)
         x = x.view(-1, 1, self.start_img_s, self.start_img_s)
         return self.conv_encoder(x)
@@ -54,15 +51,15 @@ class AE(nn.Module):
     def decode(self, x, labels=None):
         return self.conv_decoder(x)
 
-    def forward(self, x, labels):
+    def forward(self, x, labels=None):
         return self.decode(self.encode(x, labels), labels)
 
     def train_model(self, dataloader, epochs):
         self.train()
         total_loss = []
         for _ in tqdm(range(epochs), colour="yellow"):
-            for features, labels in dataloader:
-                output = self.forward(features, labels)
+            for features in dataloader:
+                output = self.forward(features)
                 self.optimizer.zero_grad()
                 loss = self.criterion(output, features)
                 loss.backward(retain_graph=True)
