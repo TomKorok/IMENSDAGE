@@ -58,7 +58,7 @@ class AE(nn.Module):
         self.train()
         total_loss = []
         for _ in tqdm(range(epochs), colour="yellow"):
-            for features in dataloader:
+            for features, _ in dataloader:
                 output = self.forward(features)
                 self.optimizer.zero_grad()
                 loss = self.criterion(output, features)

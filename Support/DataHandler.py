@@ -7,10 +7,11 @@ from scipy.io import arff
 
 
 class DataHandler:
-    def __init__(self, batch_size, device, location, dataset_title, target=None, classification=True):
+    def __init__(self, batch_size, device, location, round_exceptions, dataset_title, target=None, classification=True):
         self.scaler = StandardScaler()
         self.batch_size = batch_size
         self.device = device
+        self.round_exceptions = round_exceptions
         self.dataset_title = dataset_title
         self.target = target
         self.n_classes = None
@@ -21,6 +22,7 @@ class DataHandler:
     def read_data(self, location):
         # reading the data
         dataframe = read_file(location, self.target, self.classification)  # returning dataframe
+        dataframe = dataframe.sort_values(by=dataframe.columns[-1])
         if self.classification:
             n_features = dataframe.shape[1] - 1
             # Normalize the features
@@ -38,7 +40,7 @@ class DataHandler:
             normalized_features = self.scaler.fit_transform(dataframe.values)
             # Convert to tensors, concat and then convert to dataloader
             features_tensor = torch.tensor(normalized_features, dtype=torch.float32, device=self.device)
-            dataset = TensorDataset(features_tensor)
+            dataset = TensorDataset(features_tensor, torch.tensor(normalized_features))
             dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         return n_features, dataframe, dataset, dataloader
@@ -55,19 +57,27 @@ class DataHandler:
     def get_dataset_title(self):
         return self.dataset_title
 
-    def get_features(self):
-        return torch.stack([self.dataset[i][0] for i in range(len(self.dataset))])
+    def get_feature_tensor(self):
+        if self.classification:
+            return torch.stack([self.dataset[i][0] for i in range(len(self.dataset))])
+        else:
+            return
 
-    def get_labels(self):
-        return torch.stack([self.dataset[i][1] for i in range(len(self.dataset))])
+    def get_label_tensor(self):
+        if self.classification:
+            return torch.stack([self.dataset[i][1] for i in range(len(self.dataset))])
+        else:
+            return
 
     def get_real_samples(self, amount):
-        class_0 = self.dataframe[self.dataframe['Outcome'] == 0].iloc[:amount]
-        class_1 = self.dataframe[self.dataframe['Outcome'] == 1].iloc[:amount]
+        class_0 = self.dataframe[self.dataframe['Target'] == 0].iloc[:amount]
+        class_1 = self.dataframe[self.dataframe['Target'] == 1].iloc[:amount]
         return pd.concat([class_0, class_1])
 
-    def get_fake_samples(self, ae, gen_data, round_exceptions):
-        fake_samples = np.array(ae.decode(gen_data["gen_images"], gen_data["labels"]).squeeze(dim=0).detach().cpu())
+    def get_fake_samples(self, ae, gen_data, amount=None):
+        if amount is None:
+            amount = gen_data["fake_images"].shape[0] // 2
+        fake_samples = np.array(ae.decode(gen_data["fake_images"], gen_data["labels"]).squeeze(dim=0).detach().cpu())
 
         # convert the samples to dataframe and redo the normalizing
         fake_samples = pd.DataFrame(fake_samples)
@@ -80,19 +90,24 @@ class DataHandler:
         fake_samples = pd.DataFrame(fake_samples, columns=self.dataframe.columns)
 
         # round the necessary columns -- everything except for the exceptions
-        fake_samples.loc[:, ~fake_samples.columns.isin(round_exceptions)] = fake_samples.loc[:,
+        fake_samples.loc[:, ~fake_samples.columns.isin(self.round_exceptions)] = fake_samples.loc[:,
                                                                             ~fake_samples.columns.isin(
-                                                                                round_exceptions)].round(0)
+                                                                                self.round_exceptions)].round(0)
 
         # set the column types equal to the ones in the original
         for column in fake_samples.columns:
             if column in self.dataframe:
                 fake_samples[column] = fake_samples[column].astype(self.dataframe[column].dtype)
 
-        return fake_samples
+        class_0 = fake_samples[fake_samples['Target'] == 0].iloc[:amount]
+        class_1 = fake_samples[fake_samples['Target'] == 1].iloc[:amount]
+        return pd.concat([class_0, class_1])
 
     def get_n_classes(self):
         return self.n_classes
+
+    def get_title(self):
+        return self.dataset_title
 
 
 def read_file(location, target, classification):

@@ -60,7 +60,7 @@ class GAN(nn.Module):
         self.set_mode("eval")
         class_labels = torch.arange(self.n_classes, device=self.device).repeat_interleave(amount)
         self.set_batch_size(class_labels.size(0))
-        return {"gen_images": self.generate(class_labels), "labels": class_labels}
+        return {"fake_images": self.generate(class_labels), "labels": class_labels}
 
     def generate(self, labels):
         noise = torch.randn(self.batch_size, self.noise_size, device=self.device)
@@ -98,16 +98,14 @@ class GAN(nn.Module):
 
         return d_loss.item()
 
-    def train_model(self, autoencoder, dataloader, epochs=1000):
-        autoencoder.eval()
+    def train_model(self, dataloader, epochs=1000):
         self.set_mode("train")
         total_g_loss = []
         total_d_loss = []
         for _ in tqdm(range(epochs), colour='magenta'):
-            for features, real_labels in dataloader:
-                batch_size = len(features)
+            for real_images, real_labels in dataloader:
+                batch_size = len(real_images)
                 self.set_batch_size(batch_size)
-                real_images = autoencoder.encode(features, real_labels)
 
                 fake_labels = torch.randint(0, self.n_classes, (self.batch_size,), device=self.device)
                 fake_images = self.generate(fake_labels)
