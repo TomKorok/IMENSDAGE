@@ -7,7 +7,7 @@ from scipy.io import arff
 
 
 class DataHandler:
-    def __init__(self, batch_size, device, location, round_exceptions, dataset_title, target=None, classification=True):
+    def __init__(self, batch_size, device, location, round_exceptions, dataset_title, target=None):
         self.scaler = StandardScaler()
         self.batch_size = batch_size
         self.device = device
@@ -15,33 +15,27 @@ class DataHandler:
         self.dataset_title = dataset_title
         self.target = target
         self.n_classes = None
-        self.classification = classification
-        self.n_features, self.dataframe, self.dataset, self.dataloader = self.read_data(location)
+        self.class_labels = None
+        self.location = location
+        self.n_features, self.dataframe, self.dataset, self.dataloader = self.read_data()
         # pandas dataset # Tensor dataset # tensor
 
-    def read_data(self, location):
+    def read_data(self):
         # reading the data
-        dataframe = read_file(location, self.target, self.classification)  # returning dataframe
+        dataframe = read_file(self.location, self.target)  # returning dataframe
         dataframe = dataframe.sort_values(by=dataframe.columns[-1])
-        if self.classification:
-            n_features = dataframe.shape[1] - 1
-            # Normalize the features
-            normalized_features = self.scaler.fit_transform(dataframe.iloc[:, :-1].values)
-            # Convert to tensors, concat and then convert to dataloader
-            features_tensor = torch.tensor(normalized_features, dtype=torch.float32, device=self.device)
 
-            labels_tensor = torch.tensor(dataframe.iloc[:, -1].values, dtype=torch.float32, device=self.device)
-            self.n_classes = torch.unique(labels_tensor).size()[0]
-            dataset = TensorDataset(features_tensor, labels_tensor)
-            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
-        else:
-            n_features = dataframe.shape[1]
-            # Normalize the features
-            normalized_features = self.scaler.fit_transform(dataframe.values)
-            # Convert to tensors, concat and then convert to dataloader
-            features_tensor = torch.tensor(normalized_features, dtype=torch.float32, device=self.device)
-            dataset = TensorDataset(features_tensor, torch.tensor(normalized_features))
-            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+        n_features = dataframe.shape[1] - 1
+        # Normalize the features
+        normalized_features = self.scaler.fit_transform(dataframe.iloc[:, :-1].values)
+        # Convert to tensors, concat and then convert to dataloader
+        features_tensor = torch.tensor(normalized_features, dtype=torch.float32, device=self.device)
+
+        labels_tensor = torch.tensor(dataframe.iloc[:, -1].values, dtype=torch.float32, device=self.device)
+        self.n_classes = torch.unique(labels_tensor).size()[0]
+        self.class_labels = np.sort(dataframe['Target'].unique())
+        dataset = TensorDataset(features_tensor, labels_tensor)
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         return n_features, dataframe, dataset, dataloader
 
@@ -58,33 +52,37 @@ class DataHandler:
         return self.dataset_title
 
     def get_feature_tensor(self):
-        if self.classification:
-            return torch.stack([self.dataset[i][0] for i in range(len(self.dataset))])
-        else:
-            return
+        return torch.stack([self.dataset[i][0] for i in range(len(self.dataset))])
 
     def get_label_tensor(self):
-        if self.classification:
-            return torch.stack([self.dataset[i][1] for i in range(len(self.dataset))])
-        else:
-            return
+        return torch.stack([self.dataset[i][1] for i in range(len(self.dataset))])
 
-    def get_real_samples(self, amount):
-        class_0 = self.dataframe[self.dataframe['Target'] == 0].iloc[:amount]
-        class_1 = self.dataframe[self.dataframe['Target'] == 1].iloc[:amount]
-        return pd.concat([class_0, class_1])
+    def get_real_samples(self, amount, dataframe=None):
+        if dataframe is None:
+            dataframe = self.dataframe
+        try:
+            selected_classes = [dataframe[dataframe['Target'] == label].iloc[:amount//len(self.class_labels)] for label in self.class_labels]
+            r_dataframe = pd.concat(selected_classes)
+            if self.target is None:
+                return r_dataframe.drop(columns=['Target'])
+            else:
+                return r_dataframe
+        except Exception:
+            pass
+        if self.target is None:
+            dataframe = dataframe.drop(columns=['Target'])
+        return dataframe.iloc[:amount]
 
-    def get_fake_samples(self, ae, gen_data, amount=None):
-        if amount is None:
-            amount = gen_data["fake_images"].shape[0] // 2
-        fake_samples = np.array(ae.decode(gen_data["fake_images"], gen_data["labels"]).squeeze(dim=0).detach().cpu())
+    def get_fake_samples(self, ae, gen_images, gen_labels=None, amount=None):
+        if amount is None: amount = gen_images.shape[0]
+        fake_samples = np.array(ae.decode(gen_images, gen_labels).squeeze(dim=0).detach().cpu())
 
         # convert the samples to dataframe and redo the normalizing
         fake_samples = pd.DataFrame(fake_samples)
         fake_samples = self.scaler.inverse_transform(fake_samples)
 
         # concat the fake samples with its labels and convert to dataframe
-        class_labels = np.expand_dims(gen_data["labels"].detach().cpu().numpy(), axis=1)
+        class_labels = np.expand_dims(gen_labels.detach().cpu().numpy(), axis=1)
         if fake_samples.shape[1] != self.dataframe.shape[1]:
             fake_samples = np.concatenate((fake_samples, class_labels), axis=1)
         fake_samples = pd.DataFrame(fake_samples, columns=self.dataframe.columns)
@@ -99,9 +97,7 @@ class DataHandler:
             if column in self.dataframe:
                 fake_samples[column] = fake_samples[column].astype(self.dataframe[column].dtype)
 
-        class_0 = fake_samples[fake_samples['Target'] == 0].iloc[:amount]
-        class_1 = fake_samples[fake_samples['Target'] == 1].iloc[:amount]
-        return pd.concat([class_0, class_1])
+        return self.get_real_samples(amount, fake_samples)
 
     def get_n_classes(self):
         return self.n_classes
@@ -109,8 +105,14 @@ class DataHandler:
     def get_title(self):
         return self.dataset_title
 
+    def get_location(self):
+        return self.location
 
-def read_file(location, target, classification):
+    def is_classification(self):
+        return True if self.target is not None else False
+
+
+def read_file(location, target):
     if 'arff' in location:
         # Read the ARFF file
         data, meta = arff.loadarff(location)
@@ -124,12 +126,11 @@ def read_file(location, target, classification):
         raise ValueError("Invalid input name provided")
 
     df = df.dropna()  # dropping uncompleted lines
-    if classification:
-        return handle_class(df, target)
-    else:
-        return df
+    try:
+        label_column = df.pop(target) # pop the target column
+        df['Target'] = label_column # move it to the end and rename it to target
+    except Exception:
+        df['Target'] = 0
 
-def handle_class(df, target):
-    type_column = df.pop(target)  # pop the target column
-    df['Target'] = type_column  # move it to the end and rename it to target
     return df.astype(np.float32)
+

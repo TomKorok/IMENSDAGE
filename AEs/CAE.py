@@ -12,11 +12,10 @@ class CAE(nn.Module):
         self.n_features = n_features
         self.criterion = nn.MSELoss()
 
-        self.embedding = nn.Sequential(
+        #encoder network
+        self.encoder_embedding = nn.Sequential(
             nn.Embedding(n_classes, 10),
         )
-
-        # Encoder network
         self.lin_encoder = nn.Sequential(
             nn.Linear(10 + self.n_features, self.start_img_s * self.start_img_s),
             nn.LeakyReLU(0.2, inplace=True),
@@ -33,7 +32,8 @@ class CAE(nn.Module):
         )
 
         # Decoder network
-        self.lin_decoder = nn.Sequential(
+        self.decoder_embedding = nn.Sequential(
+            nn.Embedding(n_classes, 10),
             nn.Linear(10, self.latent_img_s * self.latent_img_s),
         )
 
@@ -55,7 +55,7 @@ class CAE(nn.Module):
 
     def encode(self, x, labels):
         labels = labels.long()
-        label_embedding = self.embedding[0](labels)
+        label_embedding = self.encoder_embedding(labels)
         x = torch.cat([x, label_embedding], dim=1)
 
         x = self.lin_encoder(x).view(-1, 1, self.start_img_s, self.start_img_s)
@@ -64,8 +64,7 @@ class CAE(nn.Module):
 
     def decode(self, x, labels):
         labels = labels.long()
-        label_embedding = self.embedding[0](labels)
-        label_embedding = self.lin_decoder(label_embedding).view(-1, 1, self.latent_img_s, self.latent_img_s)
+        label_embedding = self.decoder_embedding(labels).view(-1, 1, self.latent_img_s, self.latent_img_s)
 
         x = torch.cat([x, label_embedding], dim=1)
         return self.conv_decoder(x)
