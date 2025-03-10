@@ -38,7 +38,7 @@ class IMENSDAGE:
         return gan
 
     def gen_ae_model(self, ae_model):
-        ae = AEHandler.AEHandler(ae_model, self.data_handler.get_n_features(), self.data_handler.get_n_classes()).to(self.device)
+        ae = AEHandler.AEHandler(ae_model["model"], ae_model["latent_size"], self.data_handler.get_n_features(), self.data_handler.get_n_classes()).to(self.device)
         ae.get_summary()
         return ae
 
@@ -46,10 +46,12 @@ class IMENSDAGE:
         # Pipeline #1  reading data
         self.data_handler = DataHandler.DataHandler(self.batch_size, self.device, location, round_exceptions, title, target)
 
-    def train_ae(self, ae_model='c'):
+    def train_ae(self, ae_model=None):
+        if ae_model is None:
+            ae_model = {"model": "c", "latent_size": 64}
         self.ae = self.gen_ae_model(ae_model)
         total_ae_loss = self.ae.train_model(self.data_handler.get_dataloader(), epochs=1)
-        HarryPlotter.plot_curve(f"Pre-trained AE Loss {self.data_handler.get_dataset_title()} AE={ae_model}", total_ae_loss)
+        HarryPlotter.plot_curve(f"Pre-trained AE Loss {self.data_handler.get_dataset_title()} AE={ae_model['model']}", total_ae_loss)
         return self.ae.encode(self.data_handler.get_feature_tensor(), self.data_handler.get_label_tensor()), self.data_handler.get_label_tensor()
 
     def train_gen_model(self, encoded_images, real_labels=None, gan_model=None):

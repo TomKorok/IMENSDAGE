@@ -1,4 +1,5 @@
 # Conditional Generative Adversarial Network
+# NO LONGER SUPPORTED
 
 import torch.nn as nn
 import torch
@@ -63,7 +64,7 @@ class Conditional_Discriminator(nn.Module):
             nn.Flatten(),
             nn.Dropout(0.4),
 
-            nn.Linear(256 * self.d_dim/4 * self.d_dim/4, 1),
+            nn.Linear(256 * int(self.d_dim/4) * int(self.d_dim/4), 1),
             nn.Sigmoid()
         )
     def forward(self, x, labels):

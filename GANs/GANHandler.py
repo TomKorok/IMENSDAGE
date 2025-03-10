@@ -16,26 +16,20 @@ class GANHandler(nn.Module):
         self.batch_size = batch_size
         self.n_classes = n_classes
         self.noise_size = 100
+        self.g_dim = g_dim
+        self.d_dim = d_dim
 
         # init the networks and apply weight init
-        if gan_model == 'c':
-            self.generator = CGAN.Conditional_Generator(self.noise_size, n_classes, g_dim)
-            self.generator.apply(self.weights_init)
-            self.discriminator = CGAN.Conditional_Discriminator(d_dim, n_classes)
-            self.discriminator.apply(self.weights_init)
         if gan_model == 'dc':
             self.generator = DCGAN.DC_Generator(self.noise_size, g_dim)
             self.generator.apply(self.weights_init)
-            self.discriminator = DCGAN.DC_Discriminator(self.noise_size, d_dim)
+            self.discriminator = DCGAN.DC_Discriminator(d_dim)
             self.discriminator.apply(self.weights_init)
-        if gan_model == 'dcc':
+        else:
             self.generator = DCCGAN.DC_C_Generator(self.noise_size, g_dim, n_classes)
             self.generator.apply(self.weights_init)
             self.discriminator = DCCGAN.DC_C_Discriminator(self.noise_size, d_dim, n_classes)
             self.discriminator.apply(self.weights_init)
-        else:
-            self.generator = GAN.Generator(self.noise_size, g_dim)
-            self.discriminator = GAN.Discriminator(d_dim)
 
         self.criterion = nn.BCELoss() # the loss is BCELoss for both the D and G
         self.g_optimizer = optim.Adam(self.generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
@@ -92,7 +86,7 @@ class GANHandler(nn.Module):
         summary(self.generator, input_size=[(1, 100), (1,)])
         print("")
         print("Summary of the Discriminator")
-        summary(self.discriminator, input_size=[(1, 3, self.d_in_img_s, self.d_in_img_s), (1,)])
+        summary(self.discriminator, input_size=[(1, 3, self.d_dim, self.d_dim), (1,)])
 
     def opt_g(self, fake_result):
         g_loss = self.criterion(fake_result, self.get_labels(real=True))

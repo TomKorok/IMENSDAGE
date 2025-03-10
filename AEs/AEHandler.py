@@ -6,22 +6,22 @@ from AEs import AE
 from AEs import IGTD_AE
 
 
-def create_ae_model(n_features, n_classes, conditional):
+def create_ae_model(latent_size, n_features, n_classes, conditional):
     match conditional:
         case 'c':
-            return CAE.CAE(n_features, n_classes)
+            return CAE.CAE(latent_size, n_features, n_classes)
         case 'n':
-            return AE.AE(n_features, n_classes)
+            return AE.AE(latent_size, n_features, n_classes)
         case 'igtd':
-            return IGTD_AE.IGTD_AE(n_features, n_classes)
+            return IGTD_AE.IGTD_AE(latent_size, n_features, n_classes)
         case _:
-            return CAE.CAE(n_features, n_classes)
+            return CAE.CAE(latent_size, n_features, n_classes)
 
 class AEHandler(nn.Module):
-    def __init__(self, conditional, n_features, n_classes):
+    def __init__(self, conditional, latent_size, n_features, n_classes):
         super(AEHandler, self).__init__()
         self.conditional = conditional
-        self.autoencoder = create_ae_model(n_features, n_classes, conditional)
+        self.autoencoder = create_ae_model(latent_size, n_features, n_classes, conditional)
         self.n_features = self.autoencoder.get_n_features()
         self.n_classes = n_classes
 

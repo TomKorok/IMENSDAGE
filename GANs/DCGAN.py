@@ -27,16 +27,17 @@ class DC_Generator(nn.Module):
             # state size. ``(nc) x 64 x 64``
         )
 
-    def forward(self, input, label=None):
-        return self.main(input)
+    def forward(self, x, label=None):
+        x = x.unsqueeze(-1)
+        return self.main(x.unsqueeze(-1))
 
 
 class DC_Discriminator(nn.Module):
-    def __init__(self, nc, ndf):
+    def __init__(self, ndf):
         super(DC_Discriminator, self).__init__()
         self.main = nn.Sequential(
             # input is ``(nc) x 64 x 64``
-            nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
+            nn.Conv2d(3, ndf, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. ``(ndf) x 32 x 32``
             nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
@@ -55,6 +56,7 @@ class DC_Discriminator(nn.Module):
             nn.Sigmoid()
         )
 
-    def forward(self, input, label=None):
-        return self.main(input)
+    def forward(self, x, label=None):
+        x = self.main(x).squeeze(-1)
+        return x.squeeze(-1)
 

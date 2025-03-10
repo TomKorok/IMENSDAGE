@@ -19,18 +19,8 @@ selected_ae_cond = {
     "latent_size": 64
 }
 
-en_images, en_labels = imensdage.train_ae(ae_model='c')
+en_images, en_labels = imensdage.train_ae(ae_model=selected_ae_cond)
 
-selected_gan_normal = {
-    "model": "n", #this model has 2 layers so pick a number which is divisible by 4
-    "g_dim": 28,
-    "d_dim": 28
-}
-selected_gan_cond = {
-    "model": "c", #this model has 2 layers so pick a number which is divisible by 4
-    "g_dim": 28,
-    "d_dim": 28
-}
 selected_gan_dc = {
     "model": "dc",
     "g_dim": 64,
@@ -43,7 +33,7 @@ selected_gan_dcc = {
 }
 
 #Step 2 -- Train any generative model and retain the generated synth images
-gen_images, gen_labels = imensdage.train_gen_model(en_images, en_labels, gan_model=selected_gan_dc) #make sure the output img size is compatible with the decoder's input size
+gen_images, gen_labels = imensdage.train_gen_model(en_images, en_labels, gan_model=selected_gan_dcc) #make sure the output img size is compatible with the decoder's input size
 
 #(Optional) Step 3 -- Display the results
 imensdage.show_results(en_images, gen_images, en_labels=en_labels, gen_labels=gen_labels)
