@@ -88,3 +88,14 @@ class IMENSDAGE:
     def evaluate(self, synth_dataframes):
         Evaluate.evaluate(self.data_handler.get_location(), self.data_handler.is_classification(), synth_dataframes)
         return
+
+    def fit(self, source, round_exceptions, title, target=None, ae_model=None, gan_model=None):
+        # this function is a one-time callable function to run the entire framework
+        # using one of the built-in GANs defined in the gan_model input
+        # returns the synthetic dataset
+        self.read_data(source, round_exceptions, title, target)
+        en_images, en_labels = self.train_ae(ae_model=ae_model)
+        gen_images, gen_labels = self.train_gen_model(en_images, en_labels, gan_model=gan_model)
+        self.show_results(en_images, gen_images, en_labels=en_labels, gen_labels=gen_labels)
+        return self.save_full_synth_set(gen_images, gen_labels)
+

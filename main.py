@@ -8,6 +8,7 @@ import pandas as pd
 
 #Step 1 -- Create the class, read the dataset, train the selected autoencoder model
 imensdage = IMENSDAGE.IMENSDAGE(batch_size = 32)
+# do not include categorical data in the round exceptions
 imensdage.read_data("source_datasets/diabetes.csv", ['BMI', 'DiabetesPedigreeFunction'], title="Pima Indians", target='Outcome')
 
 selected_ae_normal = {

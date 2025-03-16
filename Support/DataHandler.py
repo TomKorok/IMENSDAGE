@@ -5,6 +5,29 @@ from torch.utils.data import DataLoader, TensorDataset
 import pandas as pd
 from scipy.io import arff
 
+import CustomEncoder
+
+###### Handling the input #####
+# 1 - read file by read_file called from read_data
+# 2 - encode categorical data by cat_encoding hence the original dataframe is encoded as well
+# 3 - normalize by read_data and the data loader is ready to use
+###############################
+
+##### Generating the fake output #####
+# 0 - get_fake_sample is called
+# 1 - the autoencoder decodes the synthetic images
+# 2 - inverse normalize
+# 3 - round every value except for the exceptions
+# 4 - sample by get_real_sample
+# 5 - redo label encoding
+# 6 - return the amount of fake samples
+######################################
+
+##### Sampling real sample #####
+# 0 - get_real_samples is called
+# 1 - redo label encoding
+# 2 - return the amount of real samples
+################################
 
 class DataHandler:
     def __init__(self, batch_size, device, location, round_exceptions, dataset_title, target=None):
@@ -17,12 +40,15 @@ class DataHandler:
         self.n_classes = None
         self.class_labels = None
         self.location = location
+        self.label_encoder = CustomEncoder.CustomEncoder()
+        self.encoded_columns = None
         self.n_features, self.dataframe, self.dataset, self.dataloader = self.read_data()
         # pandas dataset # Tensor dataset # tensor
 
     def read_data(self):
-        # reading the data
-        dataframe = read_file(self.location, self.target)  # returning dataframe
+        # this function receives the dataframe from read_file
+        # after it, it handles normalization and creating the dataloader
+        dataframe = self.read_file()  # returning dataframe
         dataframe = dataframe.sort_values(by=dataframe.columns[-1])
 
         n_features = dataframe.shape[1] - 1
@@ -60,6 +86,8 @@ class DataHandler:
     def get_real_samples(self, amount, dataframe=None):
         if dataframe is None:
             dataframe = self.dataframe
+        if self.encoded_columns:
+            dataframe[self.encoded_columns] = self.label_encoder.inverse_transform(dataframe[self.encoded_columns])
         try:
             selected_classes = [dataframe[dataframe['Target'] == label].iloc[:amount//len(self.class_labels)] for label in self.class_labels]
             r_dataframe = pd.concat(selected_classes)
@@ -111,26 +139,41 @@ class DataHandler:
     def is_classification(self):
         return True if self.target is not None else False
 
+    def read_file(self):
+        # this method is reading the data and setting the target column
+        # it will add a Target column in the end... if the dataset is non-classification it will only contain 0
+        if 'arff' in self.location:
+            # Read the ARFF file
+            data, meta = arff.loadarff(self.location)
+            print("ARFF file loaded successfully!")
+            # Convert the ARFF data to a pandas DataFrame
+            df = pd.DataFrame(data)
+        elif 'csv' in self.location:
+            df = pd.read_csv(self.location)
+            print("CSV file loaded successfully!")
+        else:
+            raise ValueError("Invalid input name provided")
 
-def read_file(location, target):
-    if 'arff' in location:
-        # Read the ARFF file
-        data, meta = arff.loadarff(location)
-        print("ARFF file loaded successfully!")
-        # Convert the ARFF data to a pandas DataFrame
-        df = pd.DataFrame(data)
-    elif 'csv' in location:
-        df = pd.read_csv(location)
-        print("CSV file loaded successfully!")
-    else:
-        raise ValueError("Invalid input name provided")
+        df = df.dropna()  # dropping uncompleted lines
+        try:
+            label_column = df.pop(self.target) # pop the target column
+            df['Target'] = label_column # move it to the end and rename it to target
+        except Exception:
+            df['Target'] = 0
 
-    df = df.dropna()  # dropping uncompleted lines
-    try:
-        label_column = df.pop(target) # pop the target column
-        df['Target'] = label_column # move it to the end and rename it to target
-    except Exception:
-        df['Target'] = 0
+        return self.cat_encoding(df.astype(np.float32))
 
-    return df.astype(np.float32)
+    def cat_encoding(self, df):
+        # Threshold for uniqueness
+        threshold = 0.8 * len(df)
 
+        # Find columns where unique values are below threshold
+        self.encoded_columns = [col for col in df.columns if df[col].nunique() < threshold]
+
+        if self.encoded_columns:
+            # Convert all selected columns to strings, then apply lowercasing and stripping
+            df[self.encoded_columns] = df[self.encoded_columns].astype(str).apply(lambda col: col.str.lower().str.strip())
+            # label encoding
+            df[self.encoded_columns] = self.label_encoder.fit_transform(df[self.encoded_columns])
+
+        return df
