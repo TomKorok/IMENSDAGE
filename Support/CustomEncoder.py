@@ -1,10 +1,14 @@
 import pandas as pd
 
+# This class is entirely written by ChatGPT
 
 class CustomEncoder:
     def __init__(self):
         self.encoders = {}
         self.fitted = False
+
+    def get_fitted(self):
+        return self.fitted
 
     def fit(self, X):
         """

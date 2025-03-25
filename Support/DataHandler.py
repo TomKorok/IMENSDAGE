@@ -4,44 +4,26 @@ from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader, TensorDataset
 import pandas as pd
 from scipy.io import arff
+import csv
 
-import CustomEncoder
+from Support import CustomEncoder
 
-###### Handling the input #####
-# 1 - read file by read_file called from read_data
-# 2 - encode categorical data by cat_encoding hence the original dataframe is encoded as well
-# 3 - normalize by read_data and the data loader is ready to use
-###############################
+def is_removable(col):
+    return 'id' in col.lower() or col.strip() == '' or 'unnamed' in col.lower() or '#' in col.lower()
 
-##### Generating the fake output #####
-# 0 - get_fake_sample is called
-# 1 - the autoencoder decodes the synthetic images
-# 2 - inverse normalize
-# 3 - round every value except for the exceptions
-# 4 - sample by get_real_sample
-# 5 - redo label encoding
-# 6 - return the amount of fake samples
-######################################
-
-##### Sampling real sample #####
-# 0 - get_real_samples is called
-# 1 - redo label encoding
-# 2 - return the amount of real samples
-################################
 
 class DataHandler:
-    def __init__(self, batch_size, device, location, round_exceptions, dataset_title, target=None):
+    def __init__(self, batch_size, device, location, target=None):
         self.scaler = StandardScaler()
         self.batch_size = batch_size
         self.device = device
-        self.round_exceptions = round_exceptions
-        self.dataset_title = dataset_title
         self.target = target
         self.n_classes = None
         self.class_labels = None
         self.location = location
         self.label_encoder = CustomEncoder.CustomEncoder()
         self.encoded_columns = None
+        self.dropped_columns = None
         self.n_features, self.dataframe, self.dataset, self.dataloader = self.read_data()
         # pandas dataset # Tensor dataset # tensor
 
@@ -72,36 +54,50 @@ class DataHandler:
         return self.dataloader
 
     def get_dataframe(self):
-        return self.dataframe
-
-    def get_dataset_title(self):
-        return self.dataset_title
+        return self.dataframe.drop(columns=['Target']) if self.target is None else self.dataframe
 
     def get_feature_tensor(self):
         return torch.stack([self.dataset[i][0] for i in range(len(self.dataset))])
 
+    def reattach_dropped_columns(self, dataframe):
+        min_len = min(len(self.dropped_columns), len(dataframe))
+        dropped = self.dropped_columns.iloc[:min_len].reset_index(drop=True)
+        fake = dataframe.iloc[:min_len].reset_index(drop=True)
+        return pd.concat([dropped, fake], axis=1)
+
     def get_label_tensor(self):
         return torch.stack([self.dataset[i][1] for i in range(len(self.dataset))])
 
-    def get_real_samples(self, amount, dataframe=None):
-        if dataframe is None:
-            dataframe = self.dataframe
-        if self.encoded_columns:
-            dataframe[self.encoded_columns] = self.label_encoder.inverse_transform(dataframe[self.encoded_columns])
-        try:
+    def decode_columns(self, dataframe):
+        dataframe[self.encoded_columns] = self.label_encoder.inverse_transform(dataframe[self.encoded_columns])
+        return dataframe
+
+    def set_header_dtype(self, dataframe):
+        for column in dataframe.columns:
+            if column in self.dataframe:
+                dataframe[column] = dataframe[column].astype(self.dataframe[column].dtype)
+        return dataframe
+
+    def sample_amount(self, amount, dataframe):
+        dataframe = self.set_header_dtype(dataframe)
+        if self.target is not None:
             selected_classes = [dataframe[dataframe['Target'] == label].iloc[:amount//len(self.class_labels)] for label in self.class_labels]
             r_dataframe = pd.concat(selected_classes)
-            if self.target is None:
-                return r_dataframe.drop(columns=['Target'])
-            else:
-                return r_dataframe
-        except Exception:
-            pass
-        if self.target is None:
+            if self.label_encoder.get_fitted():
+                r_dataframe = self.decode_columns(r_dataframe)
+            return r_dataframe.rename(columns={'Target': self.target})
+        else:
+            if self.label_encoder.get_fitted():
+                dataframe = self.decode_columns(dataframe)
             dataframe = dataframe.drop(columns=['Target'])
+
         return dataframe.iloc[:amount]
 
+    def get_real_samples(self, amount):
+        return self.sample_amount(amount, self.dataframe.copy())
+
     def get_fake_samples(self, ae, gen_images, gen_labels=None, amount=None):
+        is_reattach = True if amount is None and self.dropped_columns is not None else False
         if amount is None: amount = gen_images.shape[0]
         fake_samples = np.array(ae.decode(gen_images, gen_labels).squeeze(dim=0).detach().cpu())
 
@@ -115,29 +111,26 @@ class DataHandler:
             fake_samples = np.concatenate((fake_samples, class_labels), axis=1)
         fake_samples = pd.DataFrame(fake_samples, columns=self.dataframe.columns)
 
-        # round the necessary columns -- everything except for the exceptions
-        fake_samples.loc[:, ~fake_samples.columns.isin(self.round_exceptions)] = fake_samples.loc[:,
-                                                                            ~fake_samples.columns.isin(
-                                                                                self.round_exceptions)].round(0)
-
-        # set the column types equal to the ones in the original
-        for column in fake_samples.columns:
-            if column in self.dataframe:
-                fake_samples[column] = fake_samples[column].astype(self.dataframe[column].dtype)
-
-        return self.get_real_samples(amount, fake_samples)
+        fake_samples = self.sample_amount(amount, fake_samples)
+        if is_reattach:
+            fake_samples = self.reattach_dropped_columns(fake_samples)
+        return fake_samples
 
     def get_n_classes(self):
         return self.n_classes
-
-    def get_title(self):
-        return self.dataset_title
 
     def get_location(self):
         return self.location
 
     def is_classification(self):
         return True if self.target is not None else False
+
+    def detect_delimiter(self):
+        with open(self.location, 'r', newline='', encoding='utf-8') as file:
+            sample = file.read(50)  # Read a small portion of the file
+            sniffer = csv.Sniffer()
+            delimiter = sniffer.sniff(sample).delimiter
+            return delimiter
 
     def read_file(self):
         # this method is reading the data and setting the target column
@@ -149,26 +142,32 @@ class DataHandler:
             # Convert the ARFF data to a pandas DataFrame
             df = pd.DataFrame(data)
         elif 'csv' in self.location:
-            df = pd.read_csv(self.location)
+            df = pd.read_csv(self.location, sep=self.detect_delimiter())
             print("CSV file loaded successfully!")
         else:
             raise ValueError("Invalid input name provided")
 
         df = df.dropna()  # dropping uncompleted lines
+
+        cols_to_remove = [col for col in df.columns if is_removable(col)]
+        if cols_to_remove:
+            self.dropped_columns = df[cols_to_remove]
+            df = df.drop(columns=cols_to_remove)
+
         try:
             label_column = df.pop(self.target) # pop the target column
-            df['Target'] = label_column # move it to the end and rename it to target
+            df['Target'] = label_column # move it to the end
         except Exception:
             df['Target'] = 0
 
-        return self.cat_encoding(df.astype(np.float32))
+        return self.cat_encoding(df) # label encode the labels as well
 
     def cat_encoding(self, df):
         # Threshold for uniqueness
-        threshold = 0.8 * len(df)
+        threshold = 0.05 * len(df)
 
-        # Find columns where unique values are below threshold
-        self.encoded_columns = [col for col in df.columns if df[col].nunique() < threshold]
+        # Find columns where unique values are below threshold df[col].nunique() < threshold and
+        self.encoded_columns = [col for col in df.columns if df[col].dtype == 'object']
 
         if self.encoded_columns:
             # Convert all selected columns to strings, then apply lowercasing and stripping

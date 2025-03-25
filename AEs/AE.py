@@ -12,21 +12,21 @@ class AE(nn.Module):
 
         self.conv_encoder = nn.Sequential(
             # input is features, going into a convolution
-            nn.ConvTranspose2d(self.n_features, self.latent_size * 8, 4, 1, 0, bias=False),
-            nn.BatchNorm2d(self.latent_size * 8),
-            nn.ReLU(True),
-            # state size. ``(latent*8) x 4 x 4``
-            nn.ConvTranspose2d(self.latent_size * 8, self.latent_size * 4, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(self.n_features, self.latent_size * 4, 4, 1, 0, bias=False),
             nn.BatchNorm2d(self.latent_size * 4),
-            nn.ReLU(True),
-            # state size. ``(latent*4) x 8 x 8``
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. ``(latent*4) x 4 x 4``
             nn.ConvTranspose2d(self.latent_size * 4, self.latent_size * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(self.latent_size * 2),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. ``(latent*2) x 8 x 8``
+            nn.ConvTranspose2d(self.latent_size * 2, self.latent_size * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(self.latent_size * 2),
+            nn.LeakyReLU(0.2, inplace=True),
             # state size. ``(latent*2) x 16 x 16``
             nn.ConvTranspose2d(self.latent_size * 2, self.latent_size, 4, 2, 1, bias=False),
             nn.BatchNorm2d(self.latent_size),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, inplace=True),
             # state size. ``(latent) x 32 x 32``
             nn.ConvTranspose2d(self.latent_size, 3, 4, 2, 1, bias=False),
             nn.Tanh()
@@ -42,21 +42,21 @@ class AE(nn.Module):
             nn.BatchNorm2d(self.latent_size * 2),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. ``(latent*2) x 16 x 16``
+            nn.Conv2d(self.latent_size * 2, self.latent_size * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(self.latent_size * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. ``(latent*2) x 8 x 8``
             nn.Conv2d(self.latent_size * 2, self.latent_size * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(self.latent_size * 4),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. ``(latent*4) x 8 x 8``
-            nn.Conv2d(self.latent_size * 4, self.latent_size * 8, 4, 2, 1, bias=False),
+            # state size. ``(latent*4) x 4 x 4``
+            nn.Conv2d(self.latent_size * 4, self.latent_size * 8, 4, 1, 0, bias=False),
             nn.BatchNorm2d(self.latent_size * 8),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. ``(latent*8) x 4 x 4``
-            nn.Conv2d(self.latent_size * 8, self.latent_size*16, 4, 1, 0, bias=False),
-            nn.BatchNorm2d(self.latent_size*16),
             nn.LeakyReLU(0.2, inplace=True),
 
             nn.Flatten(),
 
-            nn.Linear(self.latent_size * 16, self.n_features),
+            nn.Linear(self.latent_size * 8, self.n_features),
         )
 
         self.optimizer = optim.Adam(self.parameters(), lr=0.00001)

@@ -4,9 +4,6 @@ from matplotlib import pyplot as plt
 import os
 
 def plot_rgb_gigaplot(title, images, en_labels, n_classes):
-    if not os.path.exists('results/synth_img'):
-        os.makedirs('results/synth_img')
-
     examples_per_class = int(images.shape[0] / n_classes)
     # Scale from [-1, 1] to [0, 255]
     images = ((images + 1) * 127.5).clip(0, 255).to(torch.uint8)
@@ -33,11 +30,7 @@ def plot_curve(title, array):
     plt.title(title)
     plt.ylabel("Loss")
     plt.xlabel("Steps")
-    try:
-        plt.savefig(f"results/curves/{title}.png")
-    except OSError:
-        os.makedirs('../results/curves', exist_ok=True)
-        plt.savefig(f"results/curves/{title}.png")
+    plt.savefig(f"results/curves/{title}.png")
     plt.show()
 
 def print_default():
