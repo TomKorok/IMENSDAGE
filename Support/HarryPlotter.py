@@ -24,12 +24,14 @@ def plot_rgb_gigaplot(title, images, en_labels, n_classes):
     plt.savefig(f'results/synth_img/{title}.png')
     plt.show()
 
-def plot_curve(title, array):
-    curve = np.convolve(array, np.ones((1,)) / 1, mode='valid')
-    plt.plot([j for j in range(len(curve))], curve, color='darkorange', alpha=1)
+def plot_curve(title, curve_dict):
+    for key in curve_dict:
+        curve = np.convolve(curve_dict[key], np.ones((1,)) / 1, mode='valid')
+        plt.plot([j for j in range(len(curve))], curve, alpha=1, label=key)
     plt.title(title)
     plt.ylabel("Loss")
     plt.xlabel("Steps")
+    plt.legend()
     plt.savefig(f"results/curves/{title}.png")
     plt.show()
 

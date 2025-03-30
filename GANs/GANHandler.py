@@ -4,31 +4,41 @@ import torch.optim as optim
 from tqdm.auto import tqdm
 from torchinfo import summary
 
-from GANs import CGAN
-from GANs import GAN
-from GANs import DCGAN
-from GANs import DCCGAN
+from GANs import DCGAN16, DCGAN64, DCCGAN16, DCCGAN64
 
 class GANHandler(nn.Module):
-    def __init__(self, batch_size, g_dim, d_dim, n_classes, gan_model):
+    def __init__(self, batch_size, n_classes, gan_model):
         super(GANHandler, self).__init__()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.batch_size = batch_size
         self.n_classes = n_classes
         self.noise_size = 100
-        self.g_dim = g_dim
-        self.d_dim = d_dim
 
         # init the networks and apply weight init
-        if gan_model == 'dc':
-            self.generator = DCGAN.DC_Generator(self.noise_size, g_dim)
+        if gan_model == 'dc16':
+            self.generator = DCGAN16.DC_Generator16(self.noise_size)
             self.generator.apply(self.weights_init)
-            self.discriminator = DCGAN.DC_Discriminator(d_dim)
+            self.discriminator = DCGAN16.DC_Discriminator16()
+            self.discriminator.apply(self.weights_init)
+        elif gan_model == 'dcc16':
+            self.generator = DCCGAN16.DCC_Generator16(self.noise_size, n_classes)
+            self.generator.apply(self.weights_init)
+            self.discriminator = DCCGAN16.DCC_Discriminator16(n_classes)
+            self.discriminator.apply(self.weights_init)
+        elif gan_model == 'dc64':
+            self.generator = DCGAN64.DC_Generator64(self.noise_size)
+            self.generator.apply(self.weights_init)
+            self.discriminator = DCGAN64.DC_Discriminator64()
+            self.discriminator.apply(self.weights_init)
+        elif gan_model == 'dcc64':
+            self.generator = DCCGAN64.DCC_Generator64(self.noise_size, n_classes)
+            self.generator.apply(self.weights_init)
+            self.discriminator = DCCGAN64.DCC_Discriminator64(n_classes)
             self.discriminator.apply(self.weights_init)
         else:
-            self.generator = DCCGAN.DC_C_Generator(self.noise_size, g_dim, n_classes)
+            self.generator = DCCGAN64.DCC_Generator64(self.noise_size, n_classes)
             self.generator.apply(self.weights_init)
-            self.discriminator = DCCGAN.DC_C_Discriminator(self.noise_size, d_dim, n_classes)
+            self.discriminator = DCCGAN64.DCC_Discriminator64(n_classes)
             self.discriminator.apply(self.weights_init)
 
         self.criterion = nn.BCELoss() # the loss is BCELoss for both the D and G

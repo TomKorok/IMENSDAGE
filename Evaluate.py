@@ -20,8 +20,18 @@ def evaluate(original_df, dataframes, target=None):
 
     return
 
+dataset = 'pima'
+target = 'Outcome'
 
-synth_dataframes = { "normal_pima" : pd.read_csv(f'results/synth_datasets/pima_n_dc_LN.csv'),
-                     "cond_pima" : pd.read_csv(f'results/synth_datasets/pima_c_dcc_LTC.csv'),}
+synth_dataframes = { "tvae" : pd.read_csv(f'results/synth_datasets/{dataset}_tvae.csv'),
+                     "ctgan" : pd.read_csv(f'results/synth_datasets/{dataset}_ctgan.csv'),
+                     "ddpm" : pd.read_csv(f'results/synth_datasets/{dataset}_ddpm.csv'),
+                     "rtvae" : pd.read_csv(f'results/synth_datasets/{dataset}_rtvae.csv'),
+                     "decaf" : pd.read_csv(f'results/synth_datasets/{dataset}_decaf.csv'),
+                     "c_o_3_16" : pd.read_csv(f'results/synth_datasets/{dataset}_c_o_3_16_dcc_3_16.csv'),
+                     "n_o_3_16" : pd.read_csv(f'results/synth_datasets/{dataset}_n_o_3_16_dc_3_16.csv'),
+                     "c_o_16" : pd.read_csv(f'results/synth_datasets/{dataset}_c_o16_dcc16.csv'),
+                     "n_o_16" : pd.read_csv(f'results/synth_datasets/{dataset}_n_o16_dc16.csv'),
+                     }
 
-evaluate(pd.read_csv("source_datasets/pima.csv"), synth_dataframes, 'Outcome')
+evaluate(pd.read_csv(f"source_datasets/{dataset}.csv"), synth_dataframes, target)
