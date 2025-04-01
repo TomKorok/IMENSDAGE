@@ -71,7 +71,7 @@ class AE(nn.Module):
     def forward(self, x, labels=None):
         return self.decode(self.encode(x, labels), labels)
 
-    def train_model(self, dataloader, epochs):
+    def train_model(self, dataloader, img_loader, epochs):
         self.train()
         total_loss = []
         for _ in tqdm(range(epochs), colour="yellow"):
@@ -83,7 +83,4 @@ class AE(nn.Module):
                 self.optimizer.step()
                 total_loss.append(loss.item())
 
-        return total_loss
-
-    def get_n_features(self):
-        return self.n_features
+        return {"AE":total_loss}

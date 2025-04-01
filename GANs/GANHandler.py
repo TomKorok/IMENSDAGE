@@ -4,14 +4,21 @@ import torch.optim as optim
 from tqdm.auto import tqdm
 from torchinfo import summary
 
-from GANs import DCGAN16, DCGAN64, DCCGAN16, DCCGAN64
+from GANs import DCGAN16, DCGAN64, DCCGAN16, DCCGAN64, DCGAN_IGTD, DCCGAN_IGTD
 
 class GANHandler(nn.Module):
-    def __init__(self, batch_size, n_classes, gan_model):
+    def __init__(self, batch_size, n_classes, gan_model, ksp_h=None, ksp_w=None):
         super(GANHandler, self).__init__()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.batch_size = batch_size
         self.n_classes = n_classes
+        self.channels = 1 if 'igtd' in gan_model else 3
+        if 'igtd' in gan_model:
+            self.img_s = (ksp_h['igtd_h'], ksp_w['igtd_w'])
+        elif '16' in gan_model:
+            self.img_s = (16, 16)
+        elif '64' in gan_model:
+            self.img_s = (64, 64)
         self.noise_size = 100
 
         # init the networks and apply weight init
@@ -35,6 +42,13 @@ class GANHandler(nn.Module):
             self.generator.apply(self.weights_init)
             self.discriminator = DCCGAN64.DCC_Discriminator64(n_classes)
             self.discriminator.apply(self.weights_init)
+        elif gan_model == 'dc_igtd':
+            self.generator = DCGAN_IGTD.DC_IGTD_Generator(self.noise_size, ksp_h, ksp_w)
+            self.generator.apply(self.weights_init)
+            self.discriminator = DCGAN_IGTD.DC_IGTD_Discriminator(ksp_h, ksp_w)
+            self.discriminator.apply(self.weights_init)
+        elif gan_model == 'dcc_igtd':
+            pass
         else:
             self.generator = DCCGAN64.DCC_Generator64(self.noise_size, n_classes)
             self.generator.apply(self.weights_init)
@@ -96,7 +110,7 @@ class GANHandler(nn.Module):
         summary(self.generator, input_size=[(1, 100), (1,)])
         print("")
         print("Summary of the Discriminator")
-        summary(self.discriminator, input_size=[(1, 3, self.d_dim, self.d_dim), (1,)])
+        summary(self.discriminator, input_size=[(1, self.channels, self.img_s[0], self.img_s[1]), (1,)])
 
     def opt_g(self, fake_result):
         g_loss = self.criterion(fake_result, self.get_labels(real=True))

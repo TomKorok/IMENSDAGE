@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm.auto import tqdm
 
-class CAE_O16(nn.Module):
-    def __init__(self, n_features, n_classes):
-        super(CAE_O16, self).__init__()
+class IGTD_CAE(nn.Module):
+    def __init__(self, n_features, n_classes, ksp_h, ksp_w):
+        super(IGTD_CAE, self).__init__()
         self.start_img_s = 4
         self.latent_img_s = 16
         self.n_classes = n_classes
@@ -84,4 +84,4 @@ class CAE_O16(nn.Module):
                 self.optimizer.step()
                 total_loss.append(loss.item())
 
-        return {"AE": total_loss}
+        return total_loss

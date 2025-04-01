@@ -1,12 +1,15 @@
+import os
 import numpy as np
 import torch
 from sklearn.preprocessing import StandardScaler
+from sympy.codegen.ast import float32
 from torch.utils.data import DataLoader, TensorDataset
 import pandas as pd
 from scipy.io import arff
 import csv
 
 from Support import CustomEncoder
+
 
 def is_removable(col):
     return 'id' in col.lower() or col.strip() == '' or 'unnamed' in col.lower() or '#' in col.lower()
@@ -24,6 +27,8 @@ class DataHandler:
         self.label_encoder = CustomEncoder.CustomEncoder()
         self.encoded_columns = None
         self.dropped_columns = None
+        self.img_tensor = None
+        self.img_loader = None
         self.n_features, self.dataframe, self.dataset, self.dataloader = self.read_data()
         # pandas dataset # Tensor dataset # tensor
 
@@ -31,7 +36,6 @@ class DataHandler:
         # this function receives the dataframe from read_file
         # after it, it handles normalization and creating the dataloader
         dataframe = self.read_file()  # returning dataframe
-        dataframe = dataframe.sort_values(by=dataframe.columns[-1])
 
         n_features = dataframe.shape[1] - 1
         # Normalize the features
@@ -43,7 +47,7 @@ class DataHandler:
         self.n_classes = torch.unique(labels_tensor).size()[0]
         self.class_labels = np.sort(dataframe['Target'].unique())
         dataset = TensorDataset(features_tensor, labels_tensor)
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+        dataloader = DataLoader(dataset, batch_size=self.batch_size)
 
         return n_features, dataframe, dataset, dataloader
 
@@ -58,6 +62,15 @@ class DataHandler:
 
     def get_feature_tensor(self):
         return torch.stack([self.dataset[i][0] for i in range(len(self.dataset))])
+
+    def get_img_loader(self):
+        return self.img_loader
+
+    def get_img_tensor(self):
+        return self.img_tensor
+
+    def get_target(self):
+        return self.target
 
     def reattach_dropped_columns(self, dataframe):
         min_len = min(len(self.dropped_columns), len(dataframe))
@@ -176,3 +189,61 @@ class DataHandler:
             df[self.encoded_columns] = self.label_encoder.fit_transform(df[self.encoded_columns])
 
         return df
+
+    def expand_dataset(self):
+        pass
+
+    def get_path_to_img(self):
+        path = f"source/images/{self.location.split('/')[-1].split('.')[0]}"
+        if self.target is not None:
+            path = f"{path}/only_feature"
+        else:
+            if os.path.exists(f"{path}/label_as_feature"):
+                path = f"{path}/label_as_feature"
+            else:
+                pass
+        return path
+
+    def rename_txt(self, path):
+        files = os.listdir(path)
+
+        # Loop through each file
+        for file_name in files:
+            # Check if it's a .txt file
+            if file_name.endswith('.txt') and file_name[0] == '_':
+                    # Create the new file name by removing the first character
+                    new_name = file_name[1:].split('_')[0]
+                    new_name = new_name.zfill(6)
+                    new_name = f"{new_name}.txt"
+                    # Get the full file paths
+                    old_file_path = os.path.join(path, file_name)
+                    new_file_path = os.path.join(path, new_name)
+                    # Rename the file
+                    os.rename(old_file_path, new_file_path)
+
+    def load_images(self):
+        path = self.get_path_to_img()
+        self.rename_txt(path)
+        # Get all txt files in the folder
+        txt_files = [f for f in os.listdir(path) if f.endswith(".txt")]
+
+        # List to store tensors
+        tensors = []
+
+        for file in txt_files:
+            file_path = f"{path}/{file}"
+
+            # Load the matrix from txt
+            matrix = torch.tensor(
+                [list(map(lambda x: float(x), line.split())) for line in open(file_path)],
+                dtype=torch.float32
+            )
+
+            matrix /= 255.0
+
+            tensors.append(matrix)
+
+        self.img_tensor = torch.stack(tensors).unsqueeze(1).to(self.device)
+
+        dataset = TensorDataset(self.img_tensor, self.get_label_tensor())
+        self.img_loader = DataLoader(dataset, batch_size=self.batch_size)

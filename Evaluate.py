@@ -28,10 +28,9 @@ synth_dataframes = { "tvae" : pd.read_csv(f'results/synth_datasets/{dataset}_tva
                      "ddpm" : pd.read_csv(f'results/synth_datasets/{dataset}_ddpm.csv'),
                      "rtvae" : pd.read_csv(f'results/synth_datasets/{dataset}_rtvae.csv'),
                      "decaf" : pd.read_csv(f'results/synth_datasets/{dataset}_decaf.csv'),
-                     "c_o_3_16" : pd.read_csv(f'results/synth_datasets/{dataset}_c_o_3_16_dcc_3_16.csv'),
-                     "n_o_3_16" : pd.read_csv(f'results/synth_datasets/{dataset}_n_o_3_16_dc_3_16.csv'),
-                     "c_o_16" : pd.read_csv(f'results/synth_datasets/{dataset}_c_o16_dcc16.csv'),
-                     "n_o_16" : pd.read_csv(f'results/synth_datasets/{dataset}_n_o16_dc16.csv'),
+                     "n_igtd" : pd.read_csv(f'results/synth_datasets/{dataset}_n_igtd_dc_igtd.csv'),
+                     "igtd_low" : pd.read_csv(f'results/synth_datasets/{dataset}_igtd_lowparam.csv'),
+                     "co16" : pd.read_csv(f'results/synth_datasets/{dataset}_co16_dcc16.csv'),
                      }
 
-evaluate(pd.read_csv(f"source_datasets/{dataset}.csv"), synth_dataframes, target)
+evaluate(pd.read_csv(f"source/datasets/{dataset}.csv"), synth_dataframes, target)
