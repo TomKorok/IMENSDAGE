@@ -12,6 +12,7 @@ def evaluate(original_df, dataframes, target=None):
 
     evaluator = SynthEval(original_df)
 
+    #try submason ranking when comparing the same model in different runs
     if target:
         df_vals, df_rank = evaluator.benchmark(dataframes, target, rank_strategy='linear',
                                                    **used_metrics)
@@ -20,17 +21,16 @@ def evaluate(original_df, dataframes, target=None):
 
     return
 
-dataset = 'pima'
-target = 'Outcome'
+dataset = 'playground'
+target = 'Kfold'
 
 synth_dataframes = { "tvae" : pd.read_csv(f'results/synth_datasets/{dataset}_tvae.csv'),
                      "ctgan" : pd.read_csv(f'results/synth_datasets/{dataset}_ctgan.csv'),
                      "ddpm" : pd.read_csv(f'results/synth_datasets/{dataset}_ddpm.csv'),
-                     "rtvae" : pd.read_csv(f'results/synth_datasets/{dataset}_rtvae.csv'),
-                     "decaf" : pd.read_csv(f'results/synth_datasets/{dataset}_decaf.csv'),
-                     "n_igtd" : pd.read_csv(f'results/synth_datasets/{dataset}_n_igtd_dc_igtd.csv'),
-                     "igtd_low" : pd.read_csv(f'results/synth_datasets/{dataset}_igtd_lowparam.csv'),
+                     #"rtvae" : pd.read_csv(f'results/synth_datasets/{dataset}_rtvae.csv'),
+                     #"decaf" : pd.read_csv(f'results/synth_datasets/{dataset}_decaf.csv'),
                      "co16" : pd.read_csv(f'results/synth_datasets/{dataset}_co16_dcc16.csv'),
+                     "c_igtd" : pd.read_csv(f'results/synth_datasets/{dataset}_c_igtd_dcc_igtd.csv'),
                      }
 
 evaluate(pd.read_csv(f"source/datasets/{dataset}.csv"), synth_dataframes, target)

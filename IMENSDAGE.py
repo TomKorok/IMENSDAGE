@@ -28,8 +28,8 @@ def closest_factors(n):
     # Start from the square root and move down to find the closest factor pair
     for i in range(sqrt_n, 0, -1):
         if n % i == 0:
-            return i, n // i  # Return the pair of factors
-    return 1, n
+            return  n // i, i  # n//i = height & i = width
+    return n, 1
 
 
 class IMENSDAGE:
@@ -53,6 +53,8 @@ class IMENSDAGE:
             os.makedirs('results/curves')
         if not os.path.exists('results/synth_datasets'):
             os.makedirs('results/synth_datasets')
+        if not os.path.exists('results/metrics'):
+            os.makedirs('results/metrics')
 
     def gen_gen_model(self, gan_model):
         gan = GANHandler.GANHandler(self.batch_size, self.data_handler.get_n_classes(), gan_model, self.ksp_h, self.ksp_w).to(self.device)
@@ -61,15 +63,10 @@ class IMENSDAGE:
 
     def igtd_dset_prepare(self):
         self.data_handler.load_images()
-        width, height = closest_factors(self.data_handler.get_n_features())
-        if width > 10 or height > 10:
+        height, width = closest_factors(self.data_handler.get_n_features())
+        if width > 15 or height > 15:
             raise ValueError(f"a dimension of the image is out of bound, height = {height}, width = {width}")
-        '''
-        while self.width > 10 or self.height > 10:
-            print("0 columns will be added to the dataset")
-            self.data_handler.expand_dataset()
-            self.width, self.height = closest_factors(self.data_handler.get_n_features())
-        '''
+
         self.ksp_h, self.ksp_w = KSP_LookUp.ksp(height, width)
 
     def gen_ae_model(self, ae_model):
@@ -114,7 +111,7 @@ class IMENSDAGE:
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         self.gen = self.gen_gen_model(gen_model)
-        total_d_loss, total_g_loss = self.gen.train_model(dataloader, epochs=1000)
+        total_d_loss, total_g_loss = self.gen.train_model(dataloader, epochs=5000)
 
         HarryPlotter.plot_curve(f"G & D Loss {self.title}", {"G": total_g_loss, "D": total_d_loss})
 
@@ -128,6 +125,8 @@ class IMENSDAGE:
 
         images, labels = filtering_samples(gen_images, gen_labels)
         HarryPlotter.plot_rgb_gigaplot(f"Generated Images {self.title}", images, labels, n_classes)
+
+        print(f"FID score: {HarryPlotter.calculate_fid(en_images, gen_images, f'fid_{self.title}')}")
 
         HarryPlotter.display_text_samples(f"5 real samples per classes {self.title}", self.data_handler.get_real_samples(self.data_handler.get_n_classes()*5))
         HarryPlotter.display_text_samples(f"5 fake samples per classes {self.title}", self.data_handler.get_fake_samples(self.ae, gen_images, gen_labels, self.data_handler.get_n_classes()*5))

@@ -1,7 +1,12 @@
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
-import os
+import numpy
+from numpy import cov
+from numpy import trace
+from numpy import iscomplexobj
+from scipy.linalg import sqrtm
+import csv
 
 def plot_rgb_gigaplot(title, images, en_labels, n_classes):
     examples_per_class = int(images.shape[0] / n_classes)
@@ -51,4 +56,25 @@ def display_text_samples(title, dataframe):
     print("")
     print(f"{title}:")
     print(dataframe.head(len(dataframe)).to_string())
+
+def calculate_fid(act1, act2, filename):
+    act1 = act1.view(act1.size(0), -1).detach().cpu().numpy()
+    act2 = act2.view(act2.size(0), -1).detach().cpu().numpy()
+    # calculate mean and covariance statistics
+    mu1, sigma1 = act1.mean(axis=0), cov(act1, rowvar=False)
+    mu2, sigma2 = act2.mean(axis=0), cov(act2, rowvar=False)
+    # calculate sum squared difference between means
+    ssdiff = numpy.sum((mu1 - mu2)**2.0)
+    # calculate sqrt of product between cov
+    covmean = sqrtm(sigma1.dot(sigma2))
+    # check and correct imaginary numbers from sqrt
+    if iscomplexobj(covmean):
+        covmean = covmean.real
+    # calculate score
+    fid = ssdiff + trace(sigma1 + sigma2 - 2.0 * covmean)
+    with open(f"results/metrics/{filename}.csv", mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['FID Score'])  # header
+        writer.writerow([fid])
+    return fid
 

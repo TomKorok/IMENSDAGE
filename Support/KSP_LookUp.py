@@ -1,102 +1,117 @@
+def values(value, table):
+    match value:
+        case 2:
+            table["input"] = 2
+            table["k1"] = 1
+            table["s1"] = 1
+            table["k2"] = 1
+            table["s2"] = 1
+        case 3:
+            table["input"] = 2
+            table["k1"] = 1
+            table["s1"] = 1
+            table["k2"] = 2
+            table["s2"] = 1
+        case 4:
+            table["input"] = 2
+            table["k1"] = 2
+            table["s1"] = 1
+            table["k2"] = 2
+            table["s2"] = 1
+        case 5:
+            table["input"] = 2
+            table["k1"] = 2
+            table["s1"] = 2
+            table["k2"] = 2
+            table["s2"] = 1
+        case 6:
+            table["input"] = 2
+            table["k1"] = 2
+            table["s1"] = 1
+            table["k2"] = 2
+            table["s2"] = 2
+        case 7:
+            table["input"] = 2
+            table["k1"] = 2
+            table["s1"] = 2
+            table["k2"] = 3
+            table["s2"] = 2
+            table["p2"] = 1
+        case 8:
+            table["input"] = 3
+            table["k1"] = 2
+            table["s1"] = 2
+            table["k2"] = 3
+            table["s2"] = 1
+        case 9:
+            table["input"] = 2
+            table["k1"] = 2
+            table["s1"] = 2
+            table["k2"] = 3
+            table["s2"] = 2
+        case 10:
+            table["input"] = 3
+            table["k1"] = 2
+            table["s1"] = 2
+            table["k2"] = 2
+            table["s2"] = 2
+            table["p2"] = 1
+        case 11:
+            table["input"] = 3
+            table["k1"] = 2
+            table["s1"] = 2
+            table["k2"] = 3
+            table["s2"] = 2
+            table["p2"] = 1
+        case 12:
+            table["input"] = 3
+            table["k1"] = 2
+            table["s1"] = 2
+            table["k2"] = 2
+            table["s2"] = 2
+        case 13:
+            table["input"] = 3
+            table["k1"] = 2
+            table["s1"] = 2
+            table["k2"] = 3
+            table["s2"] = 2
+        case 14:
+            table["input"] = 3
+            table["k1"] = 2
+            table["s1"] = 2
+            table["k2"] = 4
+            table["s2"] = 2
+        case 15:
+            table["input"] = 3
+            table["k1"] = 2
+            table["s1"] = 2
+            table["k2"] = 4
+            table["s2"] = 3
+            table["p2"] = 2
+
+    return table
+
+
 def ksp(height, width):
     ksp_h = {
+        "input" : 0,
         "k1" : 0,
         "k2" : 0,
         "s1" : 0,
         "s2" : 0,
         "p1" : 0,
         "p2" : 0,
-        "igtd_h": height,
+        "height" : height,
     }
     ksp_w = {
+        "input" : 0,
         "k1" : 0,
         "k2" : 0,
         "s1" : 0,
         "s2" : 0,
         "p1" : 0,
         "p2" : 0,
-        "igtd_w": width,
+        "width" : width,
     }
-    match height:
-        case 2:
-            ksp_h["k1"] = 1
-            ksp_h["s1"] = 1
-            ksp_h["k2"] = 1
-            ksp_h["s2"] = 1
-        case 3:
-            ksp_h["k1"] = 1
-            ksp_h["s1"] = 1
-            ksp_h["k2"] = 2
-            ksp_h["s2"] = 1
-        case 4:
-            ksp_h["k1"] = 2
-            ksp_h["s1"] = 1
-            ksp_h["k2"] = 2
-            ksp_h["s2"] = 1
-        case _: # this means the height is 5 or bigger hence the first conv layer will be 2, 2
-            ksp_h["k1"] = 2
-            ksp_h["s1"] = 2
 
-    match height:
-        case 5:
-            ksp_h["k2"] = 2
-            ksp_h["s2"] = 1
-        case 6:
-            ksp_h["k2"] = 3
-            ksp_h["s2"] = 1
-        case 7:
-            ksp_h["k2"] = 4
-            ksp_h["s2"] = 1
-        case 8:
-            ksp_h["k2"] = 4
-            ksp_h["s2"] = 2
-            ksp_h["p2"] = 1
-        case 9:
-            ksp_h["k2"] = 3
-            ksp_h["s2"] = 2
-        case 10:
-            ksp_h["k2"] = 4
-            ksp_h["s2"] = 2
-
-    match width:
-        case 2:
-            ksp_w["k1"] = 1
-            ksp_w["s1"] = 1
-            ksp_w["k2"] = 1
-            ksp_w["s2"] = 1
-        case 3:
-            ksp_w["k1"] = 1
-            ksp_w["s1"] = 1
-            ksp_w["k2"] = 2
-            ksp_w["s2"] = 1
-        case 4:
-            ksp_w["k1"] = 2
-            ksp_w["s1"] = 1
-            ksp_w["k2"] = 2
-            ksp_w["s2"] = 1
-        case _:  # this means the height is 5 or bigger hence the first conv layer will be 2, 2
-            ksp_w["k1"] = 2
-            ksp_w["s1"] = 2
-
-    match width:
-        case 5:
-            ksp_w["k2"] = 2
-            ksp_w["s2"] = 1
-        case 6:
-            ksp_w["k2"] = 3
-            ksp_w["s2"] = 1
-        case 7:
-            ksp_w["k2"] = 4
-            ksp_w["s2"] = 1
-        case 8:
-            ksp_w["k2"] = 4
-            ksp_w["s2"] = 2
-            ksp_w["p2"] = 1
-        case 9:
-            ksp_w["k2"] = 3
-            ksp_w["s2"] = 2
-        case 10:
-            ksp_w["k2"] = 4
-            ksp_w["s2"] = 2
-
-    return ksp_h, ksp_w
+    return values(height, ksp_h), values(width, ksp_w)

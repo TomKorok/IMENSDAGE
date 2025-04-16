@@ -10,20 +10,20 @@ dc64 = {  "model": "dc64"}
 dcc64 = { "model": "dcc64"}
 dcc16 = {"model": "dcc16"}
 dc16 = {"model": "dc16"}
-
 n_igtd = { "model": "n_igtd"}
 c_igtd = { "model": "c_igtd"}
 
 models = [
-            [None, "n_igtd", "dc_igtd"],
-            ["Outcome", "co16", "dcc16"]
+            #[None, "n_igtd", "dc_igtd"],
+            ["Kfold", "c_igtd", "dcc_igtd"],
+            ["Kfold", "co16", "dcc16"],
           ]
 
 #Step 1 -- Create the class, read the dataset, train the selected autoencoder model
 
 for model in models:
         imensdage = IMENSDAGE.IMENSDAGE()
-        imensdage.fit("source/datasets/pima.csv", f"{model[1]}_{model[2]}", target = model[0], ae_model = model[1], gen_model=model[2])
+        imensdage.fit("source/datasets/playground.csv", f"{model[1]}_{model[2]}", target = model[0], ae_model = model[1], gen_model=model[2])
 
 '''
 imensdage = IMENSDAGE.IMENSDAGE(batch_size = 32)

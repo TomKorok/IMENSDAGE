@@ -4,20 +4,20 @@ import torch.nn as nn
 class DC_Generator16(nn.Module):
     def __init__(self, nz):
         super(DC_Generator16, self).__init__()
-        self.ngf = 16
+        self.channel_multiplier = 16
         self.conv_generator = nn.Sequential(
             # input is Z, going into a convolution
-            nn.ConvTranspose2d( nz, self.ngf * 32, 4, 1, 0, bias=False),
-            nn.BatchNorm2d(self.ngf * 32),
+            nn.ConvTranspose2d(nz, self.channel_multiplier * 32, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(self.channel_multiplier * 32),
             nn.ReLU(True),
-            # state size. ``(ngf*8) x 4 x 4``
-            nn.ConvTranspose2d(self.ngf * 32, self.ngf * 8, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(self.ngf * 8),
+            # state size. `(channel_multiplier*8) x 4 x 4`
+            nn.ConvTranspose2d(self.channel_multiplier * 32, self.channel_multiplier * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(self.channel_multiplier * 8),
             nn.ReLU(True),
-            # state size. ``(ngf*2) x 8 x 8``
-            nn.ConvTranspose2d(self.ngf * 8, 3, 4, 2, 1, bias=False),
+            # state size. `(channel_multiplier*2) x 8 x 8`
+            nn.ConvTranspose2d(self.channel_multiplier * 8, 3, 4, 2, 1, bias=False),
             nn.Tanh()
-            # state size. ``(nc) x 16 x 16``
+            # state size. `(3) x 16 x 16`
         )
 
     def forward(self, x, label=None):
@@ -30,14 +30,14 @@ class DC_Discriminator16(nn.Module):
         super(DC_Discriminator16, self).__init__()
         self.ndf = 16
         self.main = nn.Sequential(
-            # input is ``(nc) x 16 x 16``
+            # input is `(3) x 16 x 16`
             nn.Conv2d(3, self.ndf * 8, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. ``(ndf*4) x 8 x 8``
+            # state size. `(channel_multiplier * 8) x 8 x 8`
             nn.Conv2d(self.ndf * 8, self.ndf * 16, 4, 2, 1, bias=False),
             nn.BatchNorm2d(self.ndf * 16),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. ``(ndf*8) x 4 x 4``
+            # state size. `(channel_multiplier * 16) x 4 x 4`
             nn.Conv2d(self.ndf * 16, 1, 4, 1, 0, bias=False),
             nn.Sigmoid()
         )

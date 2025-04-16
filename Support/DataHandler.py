@@ -190,9 +190,6 @@ class DataHandler:
 
         return df
 
-    def expand_dataset(self):
-        pass
-
     def get_path_to_img(self):
         path = f"source/images/{self.location.split('/')[-1].split('.')[0]}"
         if self.target is not None:

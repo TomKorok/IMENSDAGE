@@ -14,7 +14,7 @@ class GANHandler(nn.Module):
         self.n_classes = n_classes
         self.channels = 1 if 'igtd' in gan_model else 3
         if 'igtd' in gan_model:
-            self.img_s = (ksp_h['igtd_h'], ksp_w['igtd_w'])
+            self.img_s = (ksp_h['height'], ksp_w['width'])
         elif '16' in gan_model:
             self.img_s = (16, 16)
         elif '64' in gan_model:
@@ -48,7 +48,10 @@ class GANHandler(nn.Module):
             self.discriminator = DCGAN_IGTD.DC_IGTD_Discriminator(ksp_h, ksp_w)
             self.discriminator.apply(self.weights_init)
         elif gan_model == 'dcc_igtd':
-            pass
+            self.generator = DCCGAN_IGTD.DCC_IGTD_Generator(self.noise_size, n_classes, ksp_h, ksp_w)
+            self.generator.apply(self.weights_init)
+            self.discriminator = DCCGAN_IGTD.DCC_IGTD_Discriminator(n_classes, ksp_h, ksp_w)
+            self.discriminator.apply(self.weights_init)
         else:
             self.generator = DCCGAN64.DCC_Generator64(self.noise_size, n_classes)
             self.generator.apply(self.weights_init)
