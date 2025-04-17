@@ -90,7 +90,7 @@ class IMENSDAGE:
 
         img_loader = self.data_handler.get_img_loader() if 'igtd' in ae_model else None
 
-        total_ae_loss = self.ae.train_model(self.data_handler.get_dataloader(), img_loader, epochs=1000)
+        total_ae_loss = self.ae.train_model(self.data_handler.get_dataloader(), img_loader, epochs=3)
 
         HarryPlotter.plot_curve(f"Pre-trained AE Loss {self.title}", total_ae_loss)
 
@@ -111,7 +111,7 @@ class IMENSDAGE:
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         self.gen = self.gen_gen_model(gen_model)
-        total_d_loss, total_g_loss = self.gen.train_model(dataloader, epochs=5000)
+        total_d_loss, total_g_loss = self.gen.train_model(dataloader, epochs=3)
 
         HarryPlotter.plot_curve(f"G & D Loss {self.title}", {"G": total_g_loss, "D": total_d_loss})
 

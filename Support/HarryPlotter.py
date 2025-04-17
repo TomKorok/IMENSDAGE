@@ -35,7 +35,7 @@ def plot_curve(title, curve_dict):
         plt.plot([j for j in range(len(curve))], curve, alpha=1, label=key)
     plt.title(title)
     plt.ylabel("Loss")
-    plt.xlabel("Steps")
+    plt.xlabel("Epochs")
     plt.legend()
     plt.savefig(f"results/curves/{title}.png")
     plt.show()

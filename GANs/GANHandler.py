@@ -138,6 +138,8 @@ class GANHandler(nn.Module):
         total_g_loss = []
         total_d_loss = []
         for _ in tqdm(range(epochs), colour='magenta'):
+            g_epoch_loss = 0
+            d_epoch_loss = 0
             for real_images, real_labels in dataloader:
                 batch_size = len(real_images)
                 self.set_batch_size(batch_size)
@@ -149,8 +151,11 @@ class GANHandler(nn.Module):
                 fake_result = self.discriminate(fake_images, fake_labels)
 
                 # optimizing the discriminator
-                total_d_loss.append(self.opt_d(real_result, fake_result))
-                # optimizing the generator
-                total_g_loss.append(self.opt_g(fake_result))
+                d_epoch_loss += self.opt_d(real_result, fake_result)
+                g_epoch_loss += self.opt_g(fake_result)
+
+            total_d_loss.append(d_epoch_loss)
+            # optimizing the generator
+            total_g_loss.append(g_epoch_loss)
 
         return total_d_loss, total_g_loss

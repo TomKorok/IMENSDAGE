@@ -1,14 +1,9 @@
 import torch.nn as nn
-import torch.optim as optim
-from tqdm.auto import tqdm
 
 class AE_O16(nn.Module):
-    def __init__(self, n_features, n_classes):
+    def __init__(self, n_features):
         super(AE_O16, self).__init__()
         self.start_img_size = 4
-        self.n_classes = n_classes
-        self.n_features = n_features
-        self.criterion = nn.MSELoss()
 
         self.lin_encoder = nn.Sequential(
             nn.Linear(self.n_features, self.start_img_size * self.start_img_size),
@@ -36,10 +31,8 @@ class AE_O16(nn.Module):
             nn.Flatten(),
             nn.Dropout(0.2),
 
-            nn.Linear(512 * 4 * 4, self.n_features),
+            nn.Linear(512 * 4 * 4, n_features),
         )
-
-        self.optimizer = optim.Adam(self.parameters(), lr=0.00001)
 
     def encode(self, x, labels=None):
         x = self.lin_encoder(x).view(-1, 1, self.start_img_size, self.start_img_size)
@@ -51,16 +44,3 @@ class AE_O16(nn.Module):
     def forward(self, x, labels=None):
         return self.decode(self.encode(x, labels), labels)
 
-    def train_model(self, dataloader, img_loader, epochs):
-        self.train()
-        total_loss = []
-        for _ in tqdm(range(epochs), colour="yellow"):
-            for features, _ in dataloader:
-                output = self.forward(features)
-                self.optimizer.zero_grad()
-                loss = self.criterion(output, features)
-                loss.backward(retain_graph=True)
-                self.optimizer.step()
-                total_loss.append(loss.item())
-
-        return {"AE":total_loss}

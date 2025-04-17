@@ -27,6 +27,7 @@ class DataHandler:
         self.label_encoder = CustomEncoder.CustomEncoder()
         self.encoded_columns = None
         self.dropped_columns = None
+        self.binary_columns = None
         self.img_tensor = None
         self.img_loader = None
         self.n_features, self.dataframe, self.dataset, self.dataloader = self.read_data()
@@ -92,6 +93,7 @@ class DataHandler:
         return dataframe
 
     def sample_amount(self, amount, dataframe):
+        #sample amount of each class and decode the label encoding
         dataframe = self.set_header_dtype(dataframe)
         if self.target is not None:
             selected_classes = [dataframe[dataframe['Target'] == label].iloc[:amount//len(self.class_labels)] for label in self.class_labels]
@@ -145,6 +147,25 @@ class DataHandler:
             delimiter = sniffer.sniff(sample).delimiter
             return delimiter
 
+
+    def remove_unnec_cols(self, df):
+        cols_to_remove = [col for col in df.columns if is_removable(col)]
+        if cols_to_remove:
+            self.dropped_columns = df[cols_to_remove]
+            df = df.drop(columns=cols_to_remove)
+        return df
+
+    def set_target(self, df):
+        try:
+            label_column = df.pop(self.target) # pop the target column
+            df['Target'] = label_column # move it to the end
+        except Exception:
+            df['Target'] = 0
+        return df
+
+    def detect_bin_col(self, df):
+        self.binary_columns = [col for col in df.columns if df[col].dropna().nunique() == 2]
+
     def read_file(self):
         # this method is reading the data and setting the target column
         # it will add a Target column in the end... if the dataset is non-classification it will only contain 0
@@ -161,19 +182,11 @@ class DataHandler:
             raise ValueError("Invalid input name provided")
 
         df = df.dropna()  # dropping uncompleted lines
-
-        cols_to_remove = [col for col in df.columns if is_removable(col)]
-        if cols_to_remove:
-            self.dropped_columns = df[cols_to_remove]
-            df = df.drop(columns=cols_to_remove)
-
-        try:
-            label_column = df.pop(self.target) # pop the target column
-            df['Target'] = label_column # move it to the end
-        except Exception:
-            df['Target'] = 0
-
-        return self.cat_encoding(df) # label encode the labels as well
+        df = self.remove_unnec_cols(df) #drops id columns
+        df = self.set_target(df) # handles and rename the target col if any else adds one with 0
+        df = self.cat_encoding(df) # label encode the class labels as well
+        self.detect_bin_col(df)
+        return df
 
     def cat_encoding(self, df):
         # Threshold for uniqueness

@@ -1,18 +1,13 @@
 import torch.nn as nn
-import torch.optim as optim
-from tqdm.auto import tqdm
 
 class AE(nn.Module):
-    def __init__(self, n_features, n_classes):
+    def __init__(self, n_features):
         super(AE, self).__init__()
         self.channel_multiplier = 64
-        self.n_classes = n_classes
-        self.n_features = n_features
-        self.criterion = nn.MSELoss()
 
         self.conv_encoder = nn.Sequential(
             # input is features, going into a convolution
-            nn.ConvTranspose2d(self.n_features, self.channel_multiplier * 8, 4, 1, 0, bias=False),
+            nn.ConvTranspose2d(n_features, self.channel_multiplier * 8, 4, 1, 0, bias=False),
             nn.BatchNorm2d(self.channel_multiplier * 8),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. ``(latent*4) x 4 x 4``
@@ -56,10 +51,8 @@ class AE(nn.Module):
 
             nn.Flatten(),
 
-            nn.Linear(self.channel_multiplier * 16, self.n_features),
+            nn.Linear(self.channel_multiplier * 16, n_features),
         )
-
-        self.optimizer = optim.Adam(self.parameters(), lr=0.00001)
 
     def encode(self, x, labels=None):
         x = x.unsqueeze(-1)
@@ -70,17 +63,3 @@ class AE(nn.Module):
 
     def forward(self, x, labels=None):
         return self.decode(self.encode(x, labels), labels)
-
-    def train_model(self, dataloader, img_loader, epochs):
-        self.train()
-        total_loss = []
-        for _ in tqdm(range(epochs), colour="yellow"):
-            for features, _ in dataloader:
-                output = self.forward(features)
-                self.optimizer.zero_grad()
-                loss = self.criterion(output, features)
-                loss.backward(retain_graph=True)
-                self.optimizer.step()
-                total_loss.append(loss.item())
-
-        return {"AE":total_loss}

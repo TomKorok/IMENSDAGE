@@ -48,13 +48,15 @@ class IGTD_CAE(nn.Module):
                 self.train()
                 total_loss = []
                 for _ in tqdm(range(epochs), colour="yellow"):
+                    epoch_loss = 0
                     for (features, f_labels), (img, _) in zip(dataloader, img_loader):
                         encoded_img = self.forward(features, f_labels)
                         self.optimizer.zero_grad()
                         loss = self.criterion(encoded_img, img)
                         loss.backward(retain_graph=True)
                         self.optimizer.step()
-                        total_loss.append(loss.item())
+                        epoch_loss += loss.item()
+                    total_loss.append(epoch_loss)
                 return total_loss
 
         class decoder(nn.Module):
@@ -98,6 +100,7 @@ class IGTD_CAE(nn.Module):
                 self.train()
                 total_loss = []
                 for _ in tqdm(range(epochs), colour="yellow"):
+                    epoch_loss = 0
                     for (features, f_labels), (img, i_labels) in zip(dataloader, img_loader):
                         en_img = encoder(features, f_labels)
                         output_e = self.forward(en_img, f_labels)
@@ -110,7 +113,8 @@ class IGTD_CAE(nn.Module):
                         self.optimizer.zero_grad()
                         loss.backward(retain_graph=True)
                         self.optimizer.step()
-                        total_loss.append(loss.item())
+                        epoch_loss += loss.item()
+                    total_loss.append(epoch_loss)
 
                 return total_loss
 
