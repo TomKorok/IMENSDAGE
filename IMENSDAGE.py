@@ -90,7 +90,7 @@ class IMENSDAGE:
 
         img_loader = self.data_handler.get_img_loader() if 'igtd' in ae_model else None
 
-        total_ae_loss = self.ae.train_model(self.data_handler.get_dataloader(), img_loader, epochs=3)
+        total_ae_loss = self.ae.train_model(self.data_handler.get_dataloader(), img_loader, epochs=150)
 
         HarryPlotter.plot_curve(f"Pre-trained AE Loss {self.title}", total_ae_loss)
 
@@ -111,7 +111,7 @@ class IMENSDAGE:
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         self.gen = self.gen_gen_model(gen_model)
-        total_d_loss, total_g_loss = self.gen.train_model(dataloader, epochs=3)
+        total_d_loss, total_g_loss = self.gen.train_model(dataloader, epochs=300)
 
         HarryPlotter.plot_curve(f"G & D Loss {self.title}", {"G": total_g_loss, "D": total_d_loss})
 
@@ -137,9 +137,10 @@ class IMENSDAGE:
         return dataframe
 
     def multiple_sampling(self):
+        # after training this fuction saves multiple samples of synthetic tabular data
         for i in range(5):
             gen_images, gen_labels = self.gen.sample(len(self.data_handler.get_dataframe()) // self.data_handler.get_n_classes())
-            self.title = f"{self.title}_{i}"
+            self.title = f"{self.title}_sample_{i}"
             self.save_full_synth_set(gen_images, gen_labels)
 
     def fit(self, source, title=None, target=None, ae_model=None, gen_model=None):

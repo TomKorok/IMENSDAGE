@@ -42,7 +42,7 @@ class DCC_IGTD_Generator(nn.Module):
 class DCC_IGTD_Discriminator(nn.Module):
     def __init__(self, n_classes, ksp_h, ksp_w):
         super(DCC_IGTD_Discriminator, self).__init__()
-        self.channel_multiplier = 1
+        self.channel_multiplier = 6
         self.emb_dim = 50
         self.latent_img_size = (ksp_h['height'], ksp_w['width'])
 
@@ -53,14 +53,14 @@ class DCC_IGTD_Discriminator(nn.Module):
       
         self.conv_discriminator = nn.Sequential(
             # input is `(2) x H2 x W2`
-            nn.Conv2d(2, self.channel_multiplier * 32, kernel_size=(ksp_h["k2"], ksp_w["k2"]), stride=(ksp_h["s2"], ksp_w["s2"]), padding=(ksp_h["p2"], ksp_w["p2"]), bias=False),
+            nn.Conv2d(2, self.channel_multiplier * 16, kernel_size=(ksp_h["k2"], ksp_w["k2"]), stride=(ksp_h["s2"], ksp_w["s2"]), padding=(ksp_h["p2"], ksp_w["p2"]), bias=False),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. `(channel_multiplier*256) x H1 x W1`
-            nn.Conv2d(self.channel_multiplier * 32, self.channel_multiplier * 8, kernel_size=(ksp_h["k1"], ksp_w["k1"]), stride=(ksp_h["s1"], ksp_w["s1"]), padding=(ksp_h["p1"], ksp_w["p1"]), bias=False),
-            nn.BatchNorm2d(self.channel_multiplier * 8),
+            # state size. `(channel_multiplier*32) x H1 x W1`
+            nn.Conv2d(self.channel_multiplier * 16, self.channel_multiplier * 64, kernel_size=(ksp_h["k1"], ksp_w["k1"]), stride=(ksp_h["s1"], ksp_w["s1"]), padding=(ksp_h["p1"], ksp_w["p1"]), bias=False),
+            nn.BatchNorm2d(self.channel_multiplier * 64),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. `(channel_multiplier*128) x 2 x 2`
-            nn.Conv2d(self.channel_multiplier * 8, 1, kernel_size=(ksp_h["input"], ksp_w["input"]), stride=1, padding=0, bias=False),
+            nn.Conv2d(self.channel_multiplier * 64, 1, kernel_size=(ksp_h["input"], ksp_w["input"]), stride=1, padding=0, bias=False),
             nn.Sigmoid()
             # state size. `1`
         )

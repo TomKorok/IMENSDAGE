@@ -28,17 +28,17 @@ class DC_Generator16(nn.Module):
 class DC_Discriminator16(nn.Module):
     def __init__(self):
         super(DC_Discriminator16, self).__init__()
-        self.ndf = 16
+        self.channel_multiplier = 16
         self.main = nn.Sequential(
             # input is `(3) x 16 x 16`
-            nn.Conv2d(3, self.ndf * 8, 4, 2, 1, bias=False),
+            nn.Conv2d(3, self.channel_multiplier * 4, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. `(channel_multiplier * 8) x 8 x 8`
-            nn.Conv2d(self.ndf * 8, self.ndf * 16, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(self.ndf * 16),
+            nn.Conv2d(self.channel_multiplier * 4, self.channel_multiplier * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(self.channel_multiplier * 8),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. `(channel_multiplier * 16) x 4 x 4`
-            nn.Conv2d(self.ndf * 16, 1, 4, 1, 0, bias=False),
+            nn.Conv2d(self.channel_multiplier * 8, 1, 4, 1, 0, bias=False),
             nn.Sigmoid()
         )
 

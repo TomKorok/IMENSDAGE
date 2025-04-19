@@ -1,3 +1,4 @@
+import random
 import torch.nn as nn
 import torch
 import torch.optim as optim
@@ -126,7 +127,7 @@ class GANHandler(nn.Module):
     def opt_d(self, real_result, fake_result):
         loss_real = self.criterion(real_result, self.get_labels(real=True))
         loss_fake = self.criterion(fake_result, self.get_labels(real=False))
-        d_loss = (loss_real + loss_fake) / 2
+        d_loss = loss_real + loss_fake
         self.discriminator.zero_grad()
         d_loss.backward(retain_graph=True)
         self.d_optimizer.step()

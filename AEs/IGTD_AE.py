@@ -76,7 +76,7 @@ class IGTD_AE(nn.Module):
             def train_model(self, encoder, dataloader, img_loader, epochs):
                 self.train()
                 total_loss = []
-                for _ in tqdm(range(epochs), colour="yellow"):
+                for _ in tqdm(range(epochs * 2), colour="yellow"):
                     epoch_loss = 0
                     for (features, _), (img, _) in zip(dataloader, img_loader):
                         en_img = encoder(features)

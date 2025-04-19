@@ -58,23 +58,29 @@ def display_text_samples(title, dataframe):
     print(dataframe.head(len(dataframe)).to_string())
 
 def calculate_fid(act1, act2, filename):
-    act1 = act1.view(act1.size(0), -1).detach().cpu().numpy()
-    act2 = act2.view(act2.size(0), -1).detach().cpu().numpy()
-    # calculate mean and covariance statistics
-    mu1, sigma1 = act1.mean(axis=0), cov(act1, rowvar=False)
-    mu2, sigma2 = act2.mean(axis=0), cov(act2, rowvar=False)
-    # calculate sum squared difference between means
-    ssdiff = numpy.sum((mu1 - mu2)**2.0)
-    # calculate sqrt of product between cov
-    covmean = sqrtm(sigma1.dot(sigma2))
-    # check and correct imaginary numbers from sqrt
-    if iscomplexobj(covmean):
-        covmean = covmean.real
-    # calculate score
-    fid = ssdiff + trace(sigma1 + sigma2 - 2.0 * covmean)
-    with open(f"results/metrics/{filename}.csv", mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['FID Score'])  # header
-        writer.writerow([fid])
-    return fid
+    act1 = act1.view(act1.size(0), -1)
+    act2 = act2.view(act2.size(0), -1)
+    # down sampling for faster computation
+    if act1.shape[1] > 1000:
+        return "image size was too big so FID score is not calculated"
+    else:
+        mu1 = torch.mean(act1, dim=0).detach().cpu().numpy()
+        mu2 = torch.mean(act2, dim=0).detach().cpu().numpy()
+        # calculate mean and covariance statistics
+        sigma1 = cov(act1.detach().cpu().numpy(), rowvar=False)
+        sigma2 = cov(act2.detach().cpu().numpy(), rowvar=False)
+        # calculate sum squared difference between means
+        ssdiff = numpy.sum((mu1 - mu2)**2.0)
+        # calculate sqrt of product between cov
+        covmean = sqrtm(sigma1.dot(sigma2))
+        # check and correct imaginary numbers from sqrt
+        if iscomplexobj(covmean):
+            covmean = covmean.real
+        # calculate score
+        fid = ssdiff + trace(sigma1 + sigma2 - 2.0 * covmean)
+        with open(f"results/metrics/{filename}.csv", mode='w', newline='') as file:
+            writer = csv.writer(file, delimiter=';')
+            writer.writerow(['FID Score'])  # header
+            writer.writerow([f"{fid:.2f}".replace('.', ',')])
+        return fid
 

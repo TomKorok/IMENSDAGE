@@ -6,7 +6,7 @@ class AE_O16(nn.Module):
         self.start_img_size = 4
 
         self.lin_encoder = nn.Sequential(
-            nn.Linear(self.n_features, self.start_img_size * self.start_img_size),
+            nn.Linear(n_features, self.start_img_size * self.start_img_size),
             nn.LeakyReLU(0.2, inplace=True),
         )
 

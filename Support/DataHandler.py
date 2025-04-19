@@ -87,10 +87,24 @@ class DataHandler:
         return dataframe
 
     def set_header_dtype(self, dataframe):
+        for col in dataframe.columns:
+            original_dtype = self.dataframe[col].dtype
+
+            # If the original was an int (any int type), cast the predicted to int
+            if pd.api.types.is_integer_dtype(original_dtype):
+                dataframe[col] = dataframe[col].round().astype(original_dtype)
+
         for column in dataframe.columns:
             if column in self.dataframe:
                 dataframe[column] = dataframe[column].astype(self.dataframe[column].dtype)
         return dataframe
+
+    def map_binary_back(self, fake_samples):
+        for col, small, big in self.binary_columns:
+            mean_val = fake_samples[col].mean()
+            fake_samples[col] = fake_samples[col].apply(lambda x: small if x < mean_val else big)
+
+        return fake_samples
 
     def sample_amount(self, amount, dataframe):
         #sample amount of each class and decode the label encoding
@@ -126,9 +140,15 @@ class DataHandler:
             fake_samples = np.concatenate((fake_samples, class_labels), axis=1)
         fake_samples = pd.DataFrame(fake_samples, columns=self.dataframe.columns)
 
+        # map binary cols to 0 or 1
+        fake_samples = self.map_binary_back(fake_samples)
+
+        # sample the right amount
         fake_samples = self.sample_amount(amount, fake_samples)
+        #reattach dropped columns
         if is_reattach:
             fake_samples = self.reattach_dropped_columns(fake_samples)
+
         return fake_samples
 
     def get_n_classes(self):
@@ -164,36 +184,32 @@ class DataHandler:
         return df
 
     def detect_bin_col(self, df):
-        self.binary_columns = [col for col in df.columns if df[col].dropna().nunique() == 2]
+        self.binary_columns = [
+            [col, *sorted(df[col].dropna().unique())]
+            for col in df.columns
+            if df[col].dropna().nunique() == 2
+        ]
 
     def read_file(self):
         # this method is reading the data and setting the target column
         # it will add a Target column in the end... if the dataset is non-classification it will only contain 0
-        if 'arff' in self.location:
-            # Read the ARFF file
-            data, meta = arff.loadarff(self.location)
-            print("ARFF file loaded successfully!")
-            # Convert the ARFF data to a pandas DataFrame
-            df = pd.DataFrame(data)
-        elif 'csv' in self.location:
-            df = pd.read_csv(self.location, sep=self.detect_delimiter())
-            print("CSV file loaded successfully!")
-        else:
-            raise ValueError("Invalid input name provided")
+        df = pd.read_csv(self.location, sep=self.detect_delimiter())
+        print("CSV file loaded successfully!")
 
         df = df.dropna()  # dropping uncompleted lines
         df = self.remove_unnec_cols(df) #drops id columns
         df = self.set_target(df) # handles and rename the target col if any else adds one with 0
         df = self.cat_encoding(df) # label encode the class labels as well
+        df = df.convert_dtypes()  # self infer dtypes
         self.detect_bin_col(df)
         return df
 
     def cat_encoding(self, df):
         # Threshold for uniqueness
-        threshold = 0.05 * len(df)
+        threshold = 0.03 * len(df) #30% uniqueness
 
         # Find columns where unique values are below threshold df[col].nunique() < threshold and
-        self.encoded_columns = [col for col in df.columns if df[col].dtype == 'object']
+        self.encoded_columns = [col for col in df.columns if df[col].dtype == 'object' or df[col].nunique() < threshold]
 
         if self.encoded_columns:
             # Convert all selected columns to strings, then apply lowercasing and stripping

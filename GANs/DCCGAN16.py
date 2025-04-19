@@ -15,13 +15,13 @@ class DCC_Generator16(nn.Module):
         )
 
         self.lin_generator = nn.Sequential(
-            nn.Linear(nz, 512 * self.start_img_size * self.start_img_size),
+            nn.Linear(nz, self.channel_multiplier * 32 * self.start_img_size * self.start_img_size),
             nn.ReLU(True),
         )
 
         self.conv_generator = nn.Sequential(
             # state size. `(channel_multiplier * 512) x 4 x 4`
-            nn.ConvTranspose2d(513, self.channel_multiplier * 16, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(self.channel_multiplier * 32 + 1, self.channel_multiplier * 16, 4, 2, 1, bias=False),
             nn.BatchNorm2d(self.channel_multiplier * 16),
             nn.ReLU(True),
             # state size. `(channel_multiplier * 16) x 8 x 8`
@@ -34,7 +34,7 @@ class DCC_Generator16(nn.Module):
         labels = labels.long()
         label_embedding = self.label_embedding(labels).view(-1, 1, self.start_img_size, self.start_img_size)
 
-        x = self.lin_generator(x).view(-1, 512, self.start_img_size, self.start_img_size)
+        x = self.lin_generator(x).view(-1, self.channel_multiplier * 32, self.start_img_size, self.start_img_size)
         x = torch.cat((x, label_embedding), dim=1)
         return self.conv_generator(x)
 
@@ -43,8 +43,8 @@ class DCC_Discriminator16(nn.Module):
     def __init__(self, n_classes):
         super(DCC_Discriminator16, self).__init__()
         self.emd_size = 50
-        self.channel_multiplier = 16
         self.latent_img_size = 16
+        self.channel_multiplier = 16
 
         self.label_embedding = nn.Sequential(
             nn.Embedding(n_classes, self.emd_size),

@@ -99,7 +99,7 @@ class IGTD_CAE(nn.Module):
             def train_model(self, encoder, dataloader, img_loader, epochs):
                 self.train()
                 total_loss = []
-                for _ in tqdm(range(epochs), colour="yellow"):
+                for _ in tqdm(range(epochs * 2), colour="yellow"):
                     epoch_loss = 0
                     for (features, f_labels), (img, i_labels) in zip(dataloader, img_loader):
                         en_img = encoder(features, f_labels)
