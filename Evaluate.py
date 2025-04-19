@@ -52,9 +52,6 @@ def min_max_eval(dataset, model):
 
     result_df.to_csv(f"results/metrics/{dataset}_{model}_min_max.csv", index=False,  sep=';', decimal=',')
 
-def stat_plot(loc):
-    pass
-
 dataset = "pima"
 target = "Outcome"
 

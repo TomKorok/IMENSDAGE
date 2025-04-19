@@ -138,10 +138,12 @@ class IMENSDAGE:
 
     def multiple_sampling(self):
         # after training this fuction saves multiple samples of synthetic tabular data
+        original_title = self.title
         for i in range(5):
             gen_images, gen_labels = self.gen.sample(len(self.data_handler.get_dataframe()) // self.data_handler.get_n_classes())
             self.title = f"{self.title}_sample_{i}"
             self.save_full_synth_set(gen_images, gen_labels)
+            self.title = original_title
 
     def fit(self, source, title=None, target=None, ae_model=None, gen_model=None):
         # this function is a one-time callable function to run the entire framework

@@ -16,8 +16,8 @@ import IMENSDAGE
 # {"model": "n_igtd"}; {"model": "dc_igtd"}
 # {"model": "c_igtd"}; {"model": "dcc_igtd"}
 
-dataset = "pima"
-target = "Outcome"
+dataset = "playground"
+target = "Kfold"
 
 models = [
             [target, "c_igtd", "dcc_igtd"],
