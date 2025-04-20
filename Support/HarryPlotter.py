@@ -81,6 +81,6 @@ def calculate_fid(act1, act2, filename):
         with open(f"results/metrics/{filename}.csv", mode='w', newline='') as file:
             writer = csv.writer(file, delimiter=';')
             writer.writerow(['FID Score'])  # header
-            writer.writerow([f"{fid:.2f}".replace('.', ',')])
+            writer.writerow([f"{fid:.4f}".replace('.', ',')])
         return fid
 

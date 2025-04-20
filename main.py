@@ -16,13 +16,13 @@ import IMENSDAGE
 # {"model": "n_igtd"}; {"model": "dc_igtd"}
 # {"model": "c_igtd"}; {"model": "dcc_igtd"}
 
-dataset = "playground"
-target = "Kfold"
+dataset = "pima"
+target = "Outcome"
 
 models = [
             [target, "c_igtd", "dcc_igtd"],
             [target, "co16", "dcc16"],
-          ]
+            ]
 
 #Step 1 -- Create the class, read the dataset, train the selected autoencoder model
 
@@ -30,5 +30,5 @@ for i in range(5):
     for model in models:
         imensdage = IMENSDAGE.IMENSDAGE()
         imensdage.fit(f"source/datasets/{dataset}.csv", f"{model[1]}_{model[2]}_rep_{i}", target = model[0], ae_model = model[1], gen_model=model[2])
-        if i == 3:
+        if i == 2:
             imensdage.multiple_sampling()

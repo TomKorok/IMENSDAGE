@@ -23,41 +23,31 @@ class GANHandler(nn.Module):
         self.noise_size = 100
 
         # init the networks and apply weight init
-        if gan_model == 'dc16':
-            self.generator = DCGAN16.DC_Generator16(self.noise_size)
-            self.generator.apply(self.weights_init)
-            self.discriminator = DCGAN16.DC_Discriminator16()
-            self.discriminator.apply(self.weights_init)
-        elif gan_model == 'dcc16':
-            self.generator = DCCGAN16.DCC_Generator16(self.noise_size, n_classes)
-            self.generator.apply(self.weights_init)
-            self.discriminator = DCCGAN16.DCC_Discriminator16(n_classes)
-            self.discriminator.apply(self.weights_init)
-        elif gan_model == 'dc64':
-            self.generator = DCGAN64.DC_Generator64(self.noise_size)
-            self.generator.apply(self.weights_init)
-            self.discriminator = DCGAN64.DC_Discriminator64()
-            self.discriminator.apply(self.weights_init)
-        elif gan_model == 'dcc64':
-            self.generator = DCCGAN64.DCC_Generator64(self.noise_size, n_classes)
-            self.generator.apply(self.weights_init)
-            self.discriminator = DCCGAN64.DCC_Discriminator64(n_classes)
-            self.discriminator.apply(self.weights_init)
-        elif gan_model == 'dc_igtd':
-            self.generator = DCGAN_IGTD.DC_IGTD_Generator(self.noise_size, ksp_h, ksp_w)
-            self.generator.apply(self.weights_init)
-            self.discriminator = DCGAN_IGTD.DC_IGTD_Discriminator(ksp_h, ksp_w)
-            self.discriminator.apply(self.weights_init)
-        elif gan_model == 'dcc_igtd':
-            self.generator = DCCGAN_IGTD.DCC_IGTD_Generator(self.noise_size, n_classes, ksp_h, ksp_w)
-            self.generator.apply(self.weights_init)
-            self.discriminator = DCCGAN_IGTD.DCC_IGTD_Discriminator(n_classes, ksp_h, ksp_w)
-            self.discriminator.apply(self.weights_init)
-        else:
-            self.generator = DCCGAN64.DCC_Generator64(self.noise_size, n_classes)
-            self.generator.apply(self.weights_init)
-            self.discriminator = DCCGAN64.DCC_Discriminator64(n_classes)
-            self.discriminator.apply(self.weights_init)
+        match gan_model:
+            case 'dc16':
+                self.generator = DCGAN16.DC_Generator16(self.noise_size)
+                self.discriminator = DCGAN16.DC_Discriminator16()
+            case 'dcc16':
+                self.generator = DCCGAN16.DCC_Generator16(self.noise_size, n_classes)
+                self.discriminator = DCCGAN16.DCC_Discriminator16(n_classes)
+            case 'dc64':
+                self.generator = DCGAN64.DC_Generator64(self.noise_size)
+                self.discriminator = DCGAN64.DC_Discriminator64()
+            case 'dcc64':
+                self.generator = DCCGAN64.DCC_Generator64(self.noise_size, n_classes)
+                self.discriminator = DCCGAN64.DCC_Discriminator64(n_classes)
+            case 'dc_igtd':
+                self.generator = DCGAN_IGTD.DC_IGTD_Generator(self.noise_size, ksp_h, ksp_w)
+                self.discriminator = DCGAN_IGTD.DC_IGTD_Discriminator(ksp_h, ksp_w)
+            case 'dcc_igtd':
+                self.generator = DCCGAN_IGTD.DCC_IGTD_Generator(self.noise_size, n_classes, ksp_h, ksp_w)
+                self.discriminator = DCCGAN_IGTD.DCC_IGTD_Discriminator(n_classes, ksp_h, ksp_w)
+            case _:
+                self.generator = DCCGAN64.DCC_Generator64(self.noise_size, n_classes)
+                self.discriminator = DCCGAN64.DCC_Discriminator64(n_classes)
+
+        self.generator.apply(self.weights_init)
+        self.discriminator.apply(self.weights_init)
 
         self.criterion = nn.BCELoss() # the loss is BCELoss for both the D and G
         self.g_optimizer = optim.Adam(self.generator.parameters(), lr=0.0002, betas=(0.5, 0.999))

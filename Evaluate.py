@@ -1,5 +1,8 @@
 from syntheval import SynthEval
 import pandas as pd
+import os
+import glob
+import numpy as np
 
 def evaluate(original_df, dataframes, target=None):
     used_metrics = {
@@ -21,6 +24,43 @@ def evaluate(original_df, dataframes, target=None):
 
     return
 
+def cleanup_after_syntheval(save, dataset=None, title=None):
+    matched_files = glob.glob('*SE_benchmark_ranking_*.csv')
+    original_file = matched_files[0]
+    df = pd.read_csv(original_file)
+    os.remove(original_file)
+    df = df.drop(['frac_ks_sigs_error', 'corr_mat_diff_error', 'eps_identif_risk_error'], axis=1)
+    if save:
+        save_df(df,f'{dataset}_{title}' )
+    matched_files = glob.glob('*SE_benchmark_results_*.csv')
+    original_file = matched_files[0]
+    os.remove(original_file)
+    return df
+
+def expand_metrics(df, dataset):
+    df = df.drop(['rank_', 'u_rank_', 'p_rank_', 'f_rank_'], axis=1)
+    for index, row in df.iterrows():
+        min_max_result = min_max_eval(dataset, row["dataset"])
+        for _, row_mm in min_max_result.iterrows():
+            df.at[index, f"min_max_{row_mm['Feature']}"] = round(row_mm["Change (%)"]/100, 4)
+        fid_score = pd.read_csv(f"results/metrics/fid_{dataset}_{row['dataset']}.csv", sep=";", decimal=",")["FID Score"].iloc[0]
+        df.at[index, "fid"] = fid_score
+
+    return df
+
+def stat_analysis(df):
+    numeric_df = df.iloc[:, 1:]
+    means = numeric_df.mean()
+    standard_errors = numeric_df.std(ddof=1) / np.sqrt(numeric_df.count())
+
+    # Append to df as new rows
+    df.loc['Mean'] = ['Mean'] + means.tolist()
+    df.loc['Std Error'] = ['Std Error'] + standard_errors.tolist()
+    return df
+
+def save_df(df, title):
+
+    df.to_csv(f'{title}.csv', index=False, sep=';', decimal=',',  float_format='%.4f')
 
 def min_max_eval(dataset, model):
     # Step 1: Read the CSVs
@@ -51,28 +91,24 @@ def min_max_eval(dataset, model):
     })
 
     result_df.to_csv(f"results/metrics/{dataset}_{model}_min_max.csv", index=False,  sep=';', decimal=',')
+    return result_df
 
-dataset = "pima"
-target = "Outcome"
+dataset = "heart"
+target = "DEATH_EVENT"
 
-synth_dataframes = { "tvae" : pd.read_csv(f'results/synth_datasets/{dataset}_tvae.csv'),
-                     "ctgan" : pd.read_csv(f'results/synth_datasets/{dataset}_ctgan.csv'),
-                     "ddpm" : pd.read_csv(f'results/synth_datasets/{dataset}_ddpm.csv'),
-                     "rtvae" : pd.read_csv(f'results/synth_datasets/{dataset}_rtvae.csv'),
-                     "decaf" : pd.read_csv(f'results/synth_datasets/{dataset}_decaf.csv'),
-                     "co16" : pd.read_csv(f'results/synth_datasets/{dataset}_co16_dcc16.csv'),
-                     "co64" : pd.read_csv(f'results/synth_datasets/{dataset}_co64_dcc64.csv'),
-                     "c" : pd.read_csv(f'results/synth_datasets/{dataset}_c_dcc64.csv'),
-                     "c_igtd" : pd.read_csv(f'results/synth_datasets/{dataset}_c_igtd_dcc_igtd.csv'),
-                     "no16" : pd.read_csv(f'results/synth_datasets/{dataset}_no16_dc16.csv'),
-                     "no64" : pd.read_csv(f'results/synth_datasets/{dataset}_no64_dc64.csv'),
-                     "n" : pd.read_csv(f'results/synth_datasets/{dataset}_n_dc64.csv'),
-                     }
+synth_dataframes_reps_igtd = { "c_igtd_dcc_igtd_rep_0" : pd.read_csv(f'results/synth_datasets/{dataset}_c_igtd_dcc_igtd_rep_0.csv'),
+                                   "c_igtd_dcc_igtd_rep_1" : pd.read_csv(f'results/synth_datasets/{dataset}_c_igtd_dcc_igtd_rep_1.csv'),
+                                   "c_igtd_dcc_igtd_rep_2" : pd.read_csv(f'results/synth_datasets/{dataset}_c_igtd_dcc_igtd_rep_2.csv'),
+                                   "c_igtd_dcc_igtd_rep_3" : pd.read_csv(f'results/synth_datasets/{dataset}_c_igtd_dcc_igtd_rep_3.csv'),
+                                   "c_igtd_dcc_igtd_rep_4" : pd.read_csv(f'results/synth_datasets/{dataset}_c_igtd_dcc_igtd_rep_4.csv'),
+                             }
 
 
-evaluate(pd.read_csv(f"source/datasets/{dataset}.csv"), synth_dataframes, target)
+evaluate(pd.read_csv(f"source/datasets/{dataset}.csv"), synth_dataframes_reps_igtd, target)
 
-min_max_eval(dataset, "c_igtd_dcc_igtd")
-min_max_eval(dataset, "co16_dcc16")
+df = cleanup_after_syntheval(True, dataset, target)
+df = expand_metrics(df, dataset)
+df = stat_analysis(df)
+save_df(df, f"{dataset}_reps_igtd" )
 
 print("Analysis complete. Results saved.")

@@ -94,7 +94,7 @@ class IMENSDAGE:
 
         HarryPlotter.plot_curve(f"Pre-trained AE Loss {self.title}", total_ae_loss)
 
-        en_img =  self.ae.encode(self.data_handler.get_feature_tensor(), self.data_handler.get_label_tensor())
+        en_img = self.ae.encode(self.data_handler.get_feature_tensor(), self.data_handler.get_label_tensor())
 
         if img_loader is not None:
             img_tensor = self.data_handler.get_img_tensor()
@@ -137,11 +137,22 @@ class IMENSDAGE:
         return dataframe
 
     def multiple_sampling(self):
-        # after training this fuction saves multiple samples of synthetic tabular data
+        # after training this function saves multiple samples of synthetic tabular data
+        # if igtd inlcude encoded and igtd images
+        if "igtd" in self.title:
+            en_img = self.ae.encode(self.data_handler.get_feature_tensor(), self.data_handler.get_label_tensor())
+            img_tensor = self.data_handler.get_img_tensor()
+            min_len = min(len(img_tensor), len(en_img))
+            all_real_img = torch.cat((img_tensor[:min_len], en_img[:min_len]), dim=0)
+        else:
+            all_real_img = self.ae.encode(self.data_handler.get_feature_tensor(), self.data_handler.get_label_tensor())
+
         original_title = self.title
+
         for i in range(5):
             gen_images, gen_labels = self.gen.sample(len(self.data_handler.get_dataframe()) // self.data_handler.get_n_classes())
             self.title = f"{self.title}_sample_{i}"
+            HarryPlotter.calculate_fid(all_real_img, gen_images, f'fid_{self.title}')
             self.save_full_synth_set(gen_images, gen_labels)
             self.title = original_title
 
