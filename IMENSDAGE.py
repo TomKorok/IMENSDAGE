@@ -55,6 +55,8 @@ class IMENSDAGE:
             os.makedirs('results/synth_datasets')
         if not os.path.exists('results/metrics'):
             os.makedirs('results/metrics')
+        if not os.path.exists('results/stats'):
+            os.makedirs('results/stats')
 
     def gen_gen_model(self, gan_model):
         gan = GANHandler.GANHandler(self.batch_size, self.data_handler.get_n_classes(), gan_model, self.ksp_h, self.ksp_w).to(self.device)
@@ -90,7 +92,7 @@ class IMENSDAGE:
 
         img_loader = self.data_handler.get_img_loader() if 'igtd' in ae_model else None
 
-        total_ae_loss = self.ae.train_model(self.data_handler.get_dataloader(), img_loader, epochs=150)
+        total_ae_loss = self.ae.train_model(self.data_handler.get_dataloader(), img_loader, epochs=1)
 
         HarryPlotter.plot_curve(f"Pre-trained AE Loss {self.title}", total_ae_loss)
 
@@ -111,7 +113,7 @@ class IMENSDAGE:
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         self.gen = self.gen_gen_model(gen_model)
-        total_d_loss, total_g_loss = self.gen.train_model(dataloader, epochs=300)
+        total_d_loss, total_g_loss = self.gen.train_model(dataloader, epochs=1)
 
         HarryPlotter.plot_curve(f"G & D Loss {self.title}", {"G": total_g_loss, "D": total_d_loss})
 
@@ -120,13 +122,14 @@ class IMENSDAGE:
     def show_results(self, en_images, gen_images, en_labels=None, gen_labels=None):
         n_classes = self.data_handler.get_n_classes()
 
+        fid_score = HarryPlotter.calculate_fid(en_images, gen_images, f'fid_{self.title}')
+        print(f"FID score: {fid_score}")
+
         images, labels = filtering_samples(en_images, en_labels)
-        HarryPlotter.plot_rgb_gigaplot(f"Encoded Images {self.title}", images, labels, n_classes)
+        HarryPlotter.plot_rgb_gigaplot(f"Enc IMGs {self.title}", images, labels, n_classes, fid_score)
 
         images, labels = filtering_samples(gen_images, gen_labels)
-        HarryPlotter.plot_rgb_gigaplot(f"Generated Images {self.title}", images, labels, n_classes)
-
-        print(f"FID score: {HarryPlotter.calculate_fid(en_images, gen_images, f'fid_{self.title}')}")
+        HarryPlotter.plot_rgb_gigaplot(f"Gen IMGs {self.title}", images, labels, n_classes, fid_score)
 
         HarryPlotter.display_text_samples(f"5 real samples per classes {self.title}", self.data_handler.get_real_samples(self.data_handler.get_n_classes()*5))
         HarryPlotter.display_text_samples(f"5 fake samples per classes {self.title}", self.data_handler.get_fake_samples(self.ae, gen_images, gen_labels, self.data_handler.get_n_classes()*5))

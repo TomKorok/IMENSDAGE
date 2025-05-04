@@ -50,6 +50,7 @@ class AE(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
 
             nn.Flatten(),
+            nn.Dropout(0.2),
 
             nn.Linear(self.channel_multiplier * 16, n_features),
         )

@@ -63,4 +63,4 @@ class AEHandler(nn.Module):
 
     def get_summary(self):
         print("Summary of the Autoencoder")
-        summary(self.autoencoder, input_size=[(1, self.n_features), (1,)])
+        #summary(self.autoencoder, input_size=[(1, self.n_features), (1,)])

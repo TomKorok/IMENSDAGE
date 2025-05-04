@@ -16,19 +16,26 @@ import IMENSDAGE
 # {"model": "n_igtd"}; {"model": "dc_igtd"}
 # {"model": "c_igtd"}; {"model": "dcc_igtd"}
 
-dataset = "pima"
-target = "Outcome"
+datasets = ["heart", "pima", "diabetic", "breast_cancer"]
+targets = ["DEATH_EVENT", "Outcome", "TYPE", "diagnosis"]
+datasets = ["breast_cancer"]
+targets = ["diagnosis"]
 
-models = [
-            [target, "c_igtd", "dcc_igtd"],
-            [target, "co16", "dcc16"],
-            ]
+for dataset, target in zip(datasets, targets):
+    """
+    models = [[target, "c_igtd", "dcc_igtd"],
+                [target, "co16", "dcc16"],]
 
-#Step 1 -- Create the class, read the dataset, train the selected autoencoder model
+    for i in range(5):
+        for model in models:
+            imensdage = IMENSDAGE.IMENSDAGE()
+            imensdage.fit(f"source/datasets/{dataset}.csv", f"{model[1]}_{model[2]}_rep_{i}", target = model[0], ae_model = model[1], gen_model=model[2])
+            if i == 2:
+                imensdage.multiple_sampling()
+    """
+    models = [[target, "n", "dc64"],
+        [target, "c", "dcc64"]]
 
-for i in range(5):
     for model in models:
         imensdage = IMENSDAGE.IMENSDAGE()
-        imensdage.fit(f"source/datasets/{dataset}.csv", f"{model[1]}_{model[2]}_rep_{i}", target = model[0], ae_model = model[1], gen_model=model[2])
-        if i == 2:
-            imensdage.multiple_sampling()
+        imensdage.fit(f"source/datasets/{dataset}.csv", f"{model[1]}_{model[2]}", target = model[0], ae_model = model[1], gen_model=model[2])

@@ -8,7 +8,7 @@ from numpy import iscomplexobj
 from scipy.linalg import sqrtm
 import csv
 
-def plot_rgb_gigaplot(title, images, en_labels, n_classes):
+def plot_rgb_gigaplot(title, images, en_labels, n_classes, fid_score):
     examples_per_class = int(images.shape[0] / n_classes)
     # Scale from [-1, 1] to [0, 255]
     images = ((images + 1) * 127.5).clip(0, 255).to(torch.uint8)
@@ -25,7 +25,7 @@ def plot_rgb_gigaplot(title, images, en_labels, n_classes):
             axes[i, j].set_title(en_labels[idx], fontsize=8, pad=5)
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.subplots_adjust(hspace=0.5)
-    plt.suptitle(title, fontsize=12, y=1)
+    plt.suptitle(f"{title} FID: {str(fid_score).replace('.', ',')}", fontsize=8, y=1)
     plt.savefig(f'results/synth_img/{title}.png')
     plt.show()
 
@@ -62,7 +62,7 @@ def calculate_fid(act1, act2, filename):
     act2 = act2.view(act2.size(0), -1)
     # down sampling for faster computation
     if act1.shape[1] > 1000:
-        return "image size was too big so FID score is not calculated"
+        return "FID score is not calculated"
     else:
         mu1 = torch.mean(act1, dim=0).detach().cpu().numpy()
         mu2 = torch.mean(act2, dim=0).detach().cpu().numpy()
@@ -77,7 +77,7 @@ def calculate_fid(act1, act2, filename):
         if iscomplexobj(covmean):
             covmean = covmean.real
         # calculate score
-        fid = ssdiff + trace(sigma1 + sigma2 - 2.0 * covmean)
+        fid = round(ssdiff + trace(sigma1 + sigma2 - 2.0 * covmean), 4)
         with open(f"results/metrics/{filename}.csv", mode='w', newline='') as file:
             writer = csv.writer(file, delimiter=';')
             writer.writerow(['FID Score'])  # header

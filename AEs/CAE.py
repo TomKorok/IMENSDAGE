@@ -43,7 +43,7 @@ class CAE(nn.Module):
         # Decoder network
         self.decoder_label_embedding = nn.Sequential(
             nn.Embedding(n_classes, self.emb_size),
-            nn.Linear(self.emb_size, self.channel_multiplier * self.channel_multiplier),
+            nn.Linear(self.emb_size, self.latent_img_size * self.latent_img_size),
         )
 
         self.conv_decoder = nn.Sequential(
